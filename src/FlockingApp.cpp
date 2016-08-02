@@ -23,7 +23,8 @@ class FlockingApp : public AppBasic {
 
     bool     mPaused;
     bool     mShowGrid;
-    float    birdHighlight;
+    float    birdFrom;
+    float    birdTo;
     float    birdDimFactor;
 
 	// PARAMS
@@ -115,16 +116,18 @@ void FlockingApp::setup()
     mFlockAvVel = new double[3];
     mFlockPolarization = new double[3];
 
-    birdHighlight   = 0;
+    birdFrom        = 0;
+    birdTo          = 0;
     mPaused         = true;
     mShowGrid       = true;
     birdDimFactor   = 0.25f;
 
     // SETUP SIMULATION PARAMETERS
     mBoxSize = 500.;
-    mN = 1047;
+    // small number of agents for agent separation matrix testing
+    mN = 10;
     mJ = 19.0; mG = 0.2;
-    mDt = .07;
+    mDt = .007;
     mV0 = 12.57;
     mTemp = 0.7;
     m_nc = 8.;
@@ -153,8 +156,10 @@ void FlockingApp::setup()
                       "min=5.0 max=1500.0 step=1.0 keyIncr=s keyDecr=w" );
     // which bird to highlist (1-indexed). If 0, no highlighting.
     // TODO: unhardcode max and replace with NUM_INITIAL_PARTICLES
-    mParams->addParam("Bird Highlight", &birdHighlight,
-                      "min=0.0 max=1000.0 step=1.0 keyIncr=. keyDecr=,");
+    mParams->addParam("Bird From", &birdFrom,
+                      "min=0.0 max=10.0 step=1.0 keyIncr=. keyDecr=,");
+    mParams->addParam("Bird To", &birdTo,
+                      "min=0.0 max=10.0 step=1.0 keyIncr=l keyDecr=k");
     mParams->addParam("Paused", &mPaused, "keyIncr=space");
     mParams->addParam("Draw grid", &mShowGrid, "keyIncr=g");
     mParams->addSeparator();
@@ -169,7 +174,7 @@ void FlockingApp::setup()
 
     g = new Cartesian(mBoxSize);
     interaction = new Topologic((int) m_nc, g, dist2);
-    //interaction = new TopoBalanced((int) m_nc, mBalanceAngle, g, dist2);
+    //interaction = new TopoBalanced((int) m_nc, mBalanceAngle, g, dist2);                       
     behavior = new Bialek_consensus(interaction, mV0, 1.0,
                                     mDt, mJ, mG, mTemp,
                                     0.95, ra, rb, re, r0,
@@ -231,7 +236,7 @@ void FlockingApp::update()
         com.move(mDt);
 
         // BALANCED MOD
-        //com.updateAgentSepInfo();
+        com.updateAgentSepInfo();
 
         double* cp = com.get_pos();
         double* cv = com.get_vel();
@@ -260,9 +265,11 @@ void FlockingApp::draw()
     gl::drawStrokedCube(Vec3f(mBoxSize / 2, mBoxSize / 2, mBoxSize / 2), 
                         Vec3f(mBoxSize, mBoxSize, mBoxSize));
 
+
+
     // DRAW SWARMING_SPP PARTICLES
     // no highlighting
-    if ((int) birdHighlight == 0)
+    if ((int) birdFrom == 0)
     {
         gl::color(ColorA(1.0f, 1.0f, 1.0f, 1.0f));
         for (int i = 0; i < mN; i++)
@@ -277,28 +284,55 @@ void FlockingApp::draw()
     // highlighting
     else
     {
-        //// draw all but highlighted bird dimmed
+        //// draw all but from and to birds dimmed
         // particles
         gl::color(ColorA(birdDimFactor, birdDimFactor, birdDimFactor, 1.0f));
-        for (int i = 0; i < (int) birdHighlight - 1; i++)
+        for (int i = 0; i < (int) birdFrom - 1; i++)
             spp_particles[i].draw();
-        for (int i = (int) birdHighlight; i < mN; i++)
+        for (int i = (int) birdFrom; i < mN; i++)
             spp_particles[i].draw();
 
         // tails
         glBegin(GL_LINES);
-        for (int i = 0; i < (int) birdHighlight - 1; i++)
+        for (int i = 0; i < (int) birdFrom - 1; i++)
             spp_particles[i].drawTail(birdDimFactor);
-        for (int i = (int) birdHighlight; i < mN; i++)
+        for (int i = (int) birdFrom; i < mN; i++)
             spp_particles[i].drawTail(birdDimFactor);
         glEnd();
 
-        // draw highlighted bird in normal color, slightly bigger
+        int birdFromIndex = (int) birdFrom - 1;
+        int birdToIndex   = (int) birdTo - 1;
+
+        // draw from bird in standard color, slightly bigger
         gl::color(ColorA(1.0f, 1.0f, 1.0f, 1.0f));
-        spp_particles[(int) birdHighlight - 1].draw(1.6);
+        spp_particles[birdFromIndex].draw(1.6);
+        // draw to bird in blue, slightly bigger
+        gl::color(ColorA(0.0f, 0.0f, 1.0f, 1.0f));
+        spp_particles[birdToIndex].draw(1.6);
+        // draw from and to bird's tails
         glBegin(GL_LINES);
-        spp_particles[(int) birdHighlight - 1].drawTail();
+        spp_particles[birdFromIndex].drawTail();
+        spp_particles[birdToIndex].drawTail();
         glEnd();
+
+        // draw arrow from 'from' bird to 'to' bird
+        if (birdToIndex >= 0 && birdToIndex != birdFromIndex)
+        {
+            double* cp = com.get_pos();
+            double* agSepInfo = com.get_AgentSepInfo();
+
+            auto fromPos =
+                Vec3f(cp[3 * birdFromIndex],
+                cp[3 * birdFromIndex + 1],
+                cp[3 * birdFromIndex + 2]);
+            auto toDisplacement =
+                Vec3f(agSepInfo[birdFromIndex * 4 * mN + birdToIndex * 4],
+                agSepInfo[birdFromIndex * 4 * mN + birdToIndex * 4 + 1],
+                agSepInfo[birdFromIndex * 4 * mN + birdToIndex * 4 + 2]);
+            gl::color(ColorA(0.0f, 1.0f, 1.0f, 1.0f));
+            gl::drawVector(fromPos, fromPos + toDisplacement / 2, 0.2, .06);
+            gl::drawLine(fromPos + toDisplacement / 2, fromPos + toDisplacement);
+        }
     }
 
     // Draw average velocity of flock

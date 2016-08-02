@@ -32,6 +32,8 @@ Agent* Community::get_agents(){ return agents ;}
 
 int Community::get_num_agents(){ return num_agents ; }
 
+double* Community::get_AgentSepInfo() { return agentSepInfo; }
+
 double Community::get_box_size(){ return box_size ;} 
 
 // Initialization
@@ -85,7 +87,8 @@ void Community::move(double dt){
 
 void Community::updateAgentSepInfo()
 {
-    int i, j, k, temp;
+    int i, j, k;
+    double temp;
 
     for (i = 0; i < num_agents - 1; i++){
         for (j = i + 1; j < num_agents; j++){
@@ -93,7 +96,7 @@ void Community::updateAgentSepInfo()
                 temp = pos[DIM*j + k] - pos[DIM*i + k];
                 agentSepInfo[i * 4 * num_agents + j * 4 + k] = temp;
                 // symmetric entry in matrix
-                agentSepInfo[j * 4 * num_agents + i * 4 + k] = temp;
+                agentSepInfo[j * 4 * num_agents + i * 4 + k] = -temp;
                 // ij separation squared
                 agentSepInfo[i * 4 * num_agents + j * 4 + 3] += temp*temp;
                 agentSepInfo[j * 4 * num_agents + i * 4 + 3] += temp*temp;

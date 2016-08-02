@@ -45,6 +45,8 @@ class Community{
         Agent* get_agents() ;
         /* Return how many agents are in the community.*/
         int get_num_agents() ;
+        /* Return pointer to agent sep info matrix */
+        double* get_AgentSepInfo();
         /* Return box size.*/
         double get_box_size() ;
         /* Store random values in the position array *pos*.
