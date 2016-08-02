@@ -1,0 +1,69 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Header Files\swarming_spp">
+      <UniqueIdentifier>{a429b12a-ad4b-4fb3-bdf6-32b1356e3478}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\swarming_spp">
+      <UniqueIdentifier>{22f35f93-124c-47ce-b573-98b483634542}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\include\swarming_spp\agent.h">
+      <Filter>Header Files\swarming_spp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\swarming_spp\behavior.h">
+      <Filter>Header Files\swarming_spp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\swarming_spp\community.h">
+      <Filter>Header Files\swarming_spp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\swarming_spp\grid.h">
+      <Filter>Header Files\swarming_spp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\swarming_spp\interaction.h">
+      <Filter>Header Files\swarming_spp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Resources.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\include\swarming_spp\agent.cpp">
+      <Filter>Source Files\swarming_spp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\include\swarming_spp\behavior.cpp">
+      <Filter>Source Files\swarming_spp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\include\swarming_spp\community.cpp">
+      <Filter>Source Files\swarming_spp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\include\swarming_spp\grid.cpp">
+      <Filter>Source Files\swarming_spp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\include\swarming_spp\interaction.cpp">
+      <Filter>Source Files\swarming_spp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\FlockingApp.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Particle.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\ParticleController.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>
