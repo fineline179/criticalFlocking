@@ -43,8 +43,8 @@ class FlockingApp : public AppBasic {
 
     //// SWARMING_SPP
     Cartesian*           g;
-    Topologic*           interaction;
-    //TopoBalanced*          interaction;
+    //Topologic*           interaction;
+    TopoBalanced*          interaction;
     Bialek_consensus*    behavior;
     Grid*                grid;
     Community            com;
@@ -173,13 +173,16 @@ void FlockingApp::setup()
     v2    = spp_community_alloc_space(mN);
 
     g = new Cartesian(mBoxSize);
-    interaction = new Topologic((int) m_nc, g, dist2);
-    //interaction = new TopoBalanced((int) m_nc, mBalanceAngle, g, dist2);                       
+    //interaction = new Topologic((int) m_nc, g, dist2);
+    interaction = new TopoBalanced((int) m_nc, mBalanceAngle, g, dist2);                       
     behavior = new Bialek_consensus(interaction, mV0, 1.0,
                                     mDt, mJ, mG, mTemp,
                                     0.95, ra, rb, re, r0,
                                     1.0);
     com = spp_community_autostart(mN, mV0, mBoxSize, behavior);
+
+    // initialize agent separation matrix
+    com.updateAgentSepInfo();
 
     // setup SWARMING_SPP grid for faster execution
     //int nSlots = (int) sqrt( (0.5*NUM_INITIAL_PARTICLES) / mNc);
@@ -224,7 +227,7 @@ void FlockingApp::update()
     {
         // compute C_sp(r): speed correlation of agents as function of agent separation
         // HARDCODED: only out to dist of 20.0, with 20 bins of 1.0 width each
-        com.correlation_histo(mRadialCorMaxRange, mNumRadialBins, mV0, mC_sp_r, mC_sp_r_count);
+        //com.correlation_histo(mRadialCorMaxRange, mNumRadialBins, mV0, mC_sp_r, mC_sp_r_count);
         mC_sp_1 = mC_sp_r[0];
 
         // UPDATE SWARMING_SPP particle velocities
@@ -342,7 +345,7 @@ void FlockingApp::draw()
     gl::drawVector(avPos, avPos + avVel / 3, 0.3, .1);
 
     // Draw pair velocity correlation as function of separation graph
-    drawC_sp_Graph();
+    //drawC_sp_Graph();
 	
 	// Draw Params window
 	mParams->draw();

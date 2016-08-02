@@ -3,6 +3,7 @@
 #include "cinder/Rand.h"
 #include <math.h>
 #include <vector>
+#include <algorithm>
 
 // this is normally supplied in the command line when compiling the library.
 //  since I am just going from the source here, I've defined it manually
@@ -92,6 +93,9 @@ void Community::updateAgentSepInfo()
 
     for (i = 0; i < num_agents - 1; i++){
         for (j = i + 1; j < num_agents; j++){
+            // make sure to accumulate sep squared on 0
+            agentSepInfo[i * 4 * num_agents + j * 4 + 3] = 0.0;
+            agentSepInfo[j * 4 * num_agents + i * 4 + 3] = 0.0;
             for (k = 0; k < 3; k++){
                 temp = pos[DIM*j + k] - pos[DIM*i + k];
                 agentSepInfo[i * 4 * num_agents + j * 4 + k] = temp;
@@ -350,6 +354,7 @@ Community spp_community_autostart(int num_agents, double speed, double box_size,
     double* vel     = spp_community_alloc_space(num_agents);
     double* velNorm = spp_community_alloc_space(num_agents);
     double* agentSepInfos = new double[num_agents * num_agents * (DIM + 1)];
+    std::fill(agentSepInfos, agentSepInfos + num_agents * num_agents * (DIM + 1), 0.0);
     Agent** neis    = spp_community_alloc_neighbors(num_agents) ;
     Agent* ags      = spp_community_build_agents(num_agents, pos, vel, velNorm, neis, behavior) ;
     Community com = Community(num_agents, box_size, ags, pos, vel, velNorm, agentSepInfos);

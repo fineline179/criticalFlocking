@@ -179,9 +179,15 @@ int TopoBalanced::get_neighbors(Agent* a0, int a0_num, int n_agents, Agent* ags,
             pairDotProb *= pairDotProb;
             denom = 1 / (get<1>(*it1)[3] * get<1>(*it2)[3]);
             pairDotProb *= denom;
-            // if we're below critical angle..
-            if (pairDotProb >= .75 /* cos(30 degrees)^2, hardcoded*/){
-                // delete whichever neighbor is further away
+            // if we're above critical angle, both are fine
+            if (pairDotProb < .75 /* cos(30 degrees)^2, hardcoded*/)
+            {
+                it2++;
+                continue;
+            }
+            // otherwise we're below critical angle, so delete whichever neighbor is further away
+            else
+            {
                 if (get<1>(*it1)[3] >= get<1>(*it2)[3]){
                     it1 = nei_pairs.erase(it1);
                     // start over, comparing the next it1 with the it2 immediately after it.
@@ -191,6 +197,7 @@ int TopoBalanced::get_neighbors(Agent* a0, int a0_num, int n_agents, Agent* ags,
                 else it2 = nei_pairs.erase(it2);
             }
         }
+        it1++;
     }
 
     for (ia = 0, it1 = nei_pairs.begin(); it1 != nei_pairs.end(); ia++, it1++)

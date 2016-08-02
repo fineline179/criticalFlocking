@@ -168,8 +168,9 @@ void Bialek_consensus::sense_velocity(Agent* ag, int num_agents, Agent* ags,
 
     // fill neighborlist for *ag* with all relevant topological neighbors.
     // there should be num_neis - 1 actual neighbors (ie we don't include the source agent) 
-    num_neis = inter->get_neighbors(ag, num_agents, ags, neis);
-    //num_neis = inter->get_neighbors(ag, ag - ags /* THIS IS A HACK AND WILL BREAK FOR GRID USE */, num_agents, ags, neis, posPairs);
+
+    //num_neis = inter->get_neighbors(ag, num_agents, ags, neis);
+    num_neis = inter->get_neighbors(ag, ag - ags /* THIS IS A HACK AND WILL BREAK FOR GRID USE */, num_agents, ags, neis, posPairs);
 
     // 1) calc sum of velocity differences between agent and all neighbors
     // NB: agent is included in its neighbor list, but the term for which the neighbor is the agent
