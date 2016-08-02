@@ -121,8 +121,10 @@ void Agent::sense_velocity(int num_agents, Agent* ags, double* new_vel, double* 
     beh->sense_velocity(this, num_agents, ags, new_vel, neis_vel_sq);
 }
 
-void Agent::sense_velocity(int num_agents, Agent* ags, double* new_vel, double* neis_vel_sq, double* posPairs){
-    beh->sense_velocity(this, num_agents, ags, new_vel, neis_vel_sq, posPairs);
+void Agent::sense_velocity(int num_agents, Agent* ags, double* new_vel, double* neis_vel_sq,
+                           double* num_neighbors, double* posPairs)
+{
+    beh->sense_velocity(this, num_agents, ags, new_vel, neis_vel_sq, num_neighbors, posPairs);
 }
 
 int Agent::sense_danger(int num_threats, Agent* threats, double* new_vel){

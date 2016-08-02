@@ -86,7 +86,8 @@ class Agent {
          */
         void sense_velocity(int num_agents, Agent* ags, double* new_vel);
         void sense_velocity(int num_agents, Agent* ags, double* new_vel, double* neis_vel_sq);
-        void sense_velocity(int num_agents, Agent* ags, double* new_vel, double* neis_vel_sq, double* posPairs);
+        void sense_velocity(int num_agents, Agent* ags, double* new_vel, double* neis_vel_sq,
+                            double* num_neighbors, double* posPairs);
         /* Same as sense_velocity but using
          * the sense_danger function from *beh*.
          */

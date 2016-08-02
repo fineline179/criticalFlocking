@@ -246,11 +246,18 @@ public:
     int outdegree() { return k; };
 
     /* Return the outdegree = the number of neighbors. */
-    double criticalAngle() { return mu; };
-    void setCriticalAngle(double angle) { mu = angle; };
+    double criticalAngle() { return mu_degrees; };
+    void setCriticalAngle(double angle) 
+    { 
+        mu_degrees = angle; 
+        mu_rads = mu_degrees * 2.0 * 3.14159265358979 / 360.0;
+        cosSqMu = cos(mu_rads)*cos(mu_rads);
+    };
 private:
     int k;
-    double  mu;
+    double  mu_degrees;
+    double  mu_rads;
+    double  cosSqMu;
     double  rad2;
     double* dists;
 };

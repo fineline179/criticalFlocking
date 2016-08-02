@@ -84,7 +84,8 @@ class FlockingApp : public AppBasic {
     std::vector<int>    mC_sp_r_count;
     double* mFlockCenter;
     double* mFlockAvVel;
-    double  mFlockAvSpeed;;
+    double  mFlockAvSpeed;
+    double  mAvNumNeighbors;
     double* mFlockPolarization;
     double  mFlockPolarization_mag;
 
@@ -114,6 +115,7 @@ void FlockingApp::setup()
     mC_sp_r_count = std::vector<int>(20);
     mFlockCenter = new double[3];
     mFlockAvVel = new double[3];
+    mAvNumNeighbors = 0.0;
     mFlockPolarization = new double[3];
 
     birdFrom        = 0;
@@ -125,13 +127,13 @@ void FlockingApp::setup()
     // SETUP SIMULATION PARAMETERS
     mBoxSize = 500.;
     // small number of agents for agent separation matrix testing
-    mN = 10;
+    mN = 200;
     mJ = 19.0; mG = 0.2;
-    mDt = .007;
+    mDt = .03;
     mV0 = 12.57;
     mTemp = 0.7;
     m_nc = 8.;
-    mBalanceAngle = 30;
+    mBalanceAngle = 30.0;
     ra = 0.8; rb = 0.2; re = 0.5; 
     // make this large for unlimited small attraction range on non-balanced topological interactions
     r0 = 1000.;
@@ -151,6 +153,7 @@ void FlockingApp::setup()
     mParams->addParam("g",  &mG,  "min=0.1 max=20.0 step=0.1 keyIncr=v keyDecr=c");
     mParams->addParam("Temp", &mTemp, "min=0.025 max=2.0 step=0.025 keyIncr=y keyDecr=t");
     mParams->addParam("nc", &m_nc, "min=2.0 max=25.0 step=1.0 keyIncr=r keyDecr=e");
+    mParams->addParam("Balance Angle", &mBalanceAngle, "min=5.0 max=180.0 step=1.0 keyIncr=o keyDecr=i");
     mParams->addSeparator();
     mParams->addParam("Eye Distance", &mCameraDistance,
                       "min=5.0 max=1500.0 step=1.0 keyIncr=s keyDecr=w" );
@@ -164,6 +167,7 @@ void FlockingApp::setup()
     mParams->addParam("Draw grid", &mShowGrid, "keyIncr=g");
     mParams->addSeparator();
     mParams->addParam("Mean speed", &mFlockAvSpeed, true);
+    mParams->addParam("Av Num Neighs", &mAvNumNeighbors, true);
     mParams->addParam("Polarization", &mFlockPolarization_mag, true);
     mParams->addParam("Q_int", &mQ_int, true);
     mParams->addParam("C_sp[0]", &mC_sp_1, true);
@@ -222,16 +226,18 @@ void FlockingApp::update()
     behavior->setJandG(mJ, mG);
     behavior->setTemp(mTemp);
     interaction->setOutdegree((int) m_nc);
+    interaction->setCriticalAngle(mBalanceAngle);
 
     if (!mPaused)
     {
         // compute C_sp(r): speed correlation of agents as function of agent separation
         // HARDCODED: only out to dist of 20.0, with 20 bins of 1.0 width each
         //com.correlation_histo(mRadialCorMaxRange, mNumRadialBins, mV0, mC_sp_r, mC_sp_r_count);
-        mC_sp_1 = mC_sp_r[0];
+        //mC_sp_1 = mC_sp_r[0];
 
         // UPDATE SWARMING_SPP particle velocities
         double sum_of_velsq = com.sense_velocities_and_velsq(v2);
+        mAvNumNeighbors = com.get_av_num_neighbors();
 
         // update Q_int
         mQ_int = sum_of_velsq / (2 * mV0*mV0*mN*m_nc);

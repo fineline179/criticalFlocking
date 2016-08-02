@@ -144,7 +144,8 @@ Bialek_consensus::Bialek_consensus(Interaction* ii, double vzero, double gamma,
 }
 
 void Bialek_consensus::sense_velocity(Agent* ag, int num_agents, Agent* ags,
-                                      double* new_vel, double* neis_vel_sq, double* posPairs)
+                                      double* new_vel, double* neis_vel_sq, 
+                                      double* num_neighbors, double* posPairs)
 {
     int i, j;
     int num_neis;
@@ -171,6 +172,7 @@ void Bialek_consensus::sense_velocity(Agent* ag, int num_agents, Agent* ags,
 
     //num_neis = inter->get_neighbors(ag, num_agents, ags, neis);
     num_neis = inter->get_neighbors(ag, ag - ags /* THIS IS A HACK AND WILL BREAK FOR GRID USE */, num_agents, ags, neis, posPairs);
+    *num_neighbors = num_neis;
 
     // 1) calc sum of velocity differences between agent and all neighbors
     // NB: agent is included in its neighbor list, but the term for which the neighbor is the agent

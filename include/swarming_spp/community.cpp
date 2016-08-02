@@ -23,6 +23,7 @@ Community::Community(int nags , double L, Agent* ags , double* p, double* v, dou
     box_size = L ;
     use_grid = false ;
     grid = NULL ;
+    av_num_neighbors = 0.0;
 }
 
 double* Community::get_pos(){ return pos ; }
@@ -32,6 +33,8 @@ double* Community::get_vel(){ return vel ; }
 Agent* Community::get_agents(){ return agents ;} 
 
 int Community::get_num_agents(){ return num_agents ; }
+
+double Community::get_av_num_neighbors() { return av_num_neighbors ; }
 
 double* Community::get_AgentSepInfo() { return agentSepInfo; }
 
@@ -135,6 +138,8 @@ double Community::sense_velocities_and_velsq(double* vel_sensed)
     double sum_of_vel_sq = 0;
     double* vel_sq = new double;
     *vel_sq = 0;
+    av_num_neighbors = 0.0;
+    double* num_neighbors = new double;
     /*
     * If using grid, this fills the grid from scratch
     * at every iteration.
@@ -147,17 +152,23 @@ double Community::sense_velocities_and_velsq(double* vel_sensed)
         for (int i = 0; i<num_agents; i++)
         {
             neis = grid->get_neighborhood(agents + i, &num_neis);
-            agents[i].sense_velocity(num_neis, neis, vel_sensed + i*DIM, vel_sq, agentSepInfo);
+            agents[i].sense_velocity(num_neis, neis, vel_sensed + i*DIM, vel_sq,
+                                     num_neighbors,agentSepInfo);
             sum_of_vel_sq += *vel_sq;
+            av_num_neighbors += *num_neighbors;
         }
+        av_num_neighbors /= num_agents;
     }
     else
     {
         for (int i = 0; i < num_agents; i++)
         {
-            agents[i].sense_velocity(num_agents, agents, vel_sensed + i*DIM, vel_sq, agentSepInfo + i * 4 * num_agents);
+            agents[i].sense_velocity(num_agents, agents, vel_sensed + i*DIM, vel_sq,
+                                     num_neighbors, agentSepInfo + i * 4 * num_agents);
             sum_of_vel_sq += *vel_sq;
+            av_num_neighbors += *num_neighbors;
         }
+        av_num_neighbors /= num_agents;
     }
 
     return sum_of_vel_sq;

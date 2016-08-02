@@ -26,7 +26,7 @@ class Behavior {
     public:
         virtual void sense_velocity(Agent* ag, int num_agents, Agent* ags, double* new_vel) {};
         virtual void sense_velocity(Agent* ag, int num_agents, Agent* ags, double* new_vel, double* neis_vel_sq) {};
-        virtual void sense_velocity(Agent* ag, int num_agents, Agent* ags, double* new_vel, double* neis_vel_sq, double* posPairs) {};
+        virtual void sense_velocity(Agent* ag, int num_agents, Agent* ags, double* new_vel, double* neis_vel_sq, double* num_neighbors, double* posPairs) {};
         
         /* pure virtual, must be implemented */
         virtual double getdt() = 0;
@@ -101,7 +101,8 @@ public:
     /* Store the mean velocity of *ag*'s neighbors in *new_vel*,
     * re-scaled to have a *v0* norm.
     */
-    void sense_velocity(Agent* ag, int num_agents, Agent* ags, double* new_vel, double* neis_vel_sq, double* posPairs);
+    void sense_velocity(Agent* ag, int num_agents, Agent* ags, double* new_vel,
+                        double* neis_vel_sq, double* num_neighbors, double* posPairs);
 
     
     double getGam()  { return gam; };

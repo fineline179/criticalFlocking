@@ -143,7 +143,9 @@ void Topologic::look_around(Agent* a0, int n_agents, Agent* ags){
 TopoBalanced::TopoBalanced(int kk, double mumu, Geometry* gg, double* dd)
 {
     k = kk;
-    mu = mumu;
+    mu_degrees = mumu;
+    mu_rads = mumu * 2.0 * 3.14159265358979 / 360.0;
+    cosSqMu = cos(mu_rads)*cos(mu_rads);
     g = gg;
     dists = dd;
 }
@@ -160,9 +162,9 @@ int TopoBalanced::get_neighbors(Agent* a0, int a0_num, int n_agents, Agent* ags,
     // add pointers into this agent's slice of pos_pair struct, for all its neighbor pairs.
     //  skip agent's position from itself.
     for (ia = 0; ia < a0_num; ia++)
-        nei_pairs.push_back(agAndPos(ags + ia, pos_pairs + ia * 4));
+        nei_pairs.emplace_back(agAndPos(ags + ia, pos_pairs + ia * 4));
     for (ia = a0_num + 1; ia < n_agents; ia++)
-        nei_pairs.push_back(agAndPos(ags + ia, pos_pairs + ia * 4));
+        nei_pairs.emplace_back(agAndPos(ags + ia, pos_pairs + ia * 4));
 
     // cull neighbors by angles from source agent
     list<agAndPos>::iterator it1, it2;
@@ -180,7 +182,7 @@ int TopoBalanced::get_neighbors(Agent* a0, int a0_num, int n_agents, Agent* ags,
             denom = 1 / (get<1>(*it1)[3] * get<1>(*it2)[3]);
             pairDotProb *= denom;
             // if we're above critical angle, both are fine
-            if (pairDotProb < .75 /* cos(30 degrees)^2, hardcoded*/)
+            if (pairDotProb < cosSqMu)
             {
                 it2++;
                 continue;

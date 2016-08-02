@@ -45,6 +45,8 @@ class Community{
         Agent* get_agents() ;
         /* Return how many agents are in the community.*/
         int get_num_agents() ;
+        /* Return average number of neighbors (is function of opening angle) */
+        double get_av_num_neighbors();
         /* Return pointer to agent sep info matrix */
         double* get_AgentSepInfo();
         /* Return box size.*/
@@ -150,6 +152,8 @@ class Community{
     protected:
         /* Number of agents. */
         int num_agents ;
+
+        double av_num_neighbors;
         /* positions of the agents 
          *      Size: num_agents * DIM
          */
