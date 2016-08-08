@@ -133,8 +133,8 @@ void FlockingApp::setup()
 
     // SETUP SIMULATION PARAMETERS
     mBoxSize = 500.;
-    mN = 1047;
-    //mJ = 10.0; mG = 0.08;
+    //mN = 1047;
+    mN = 800;
     mJ = 19.0; mG = 0.2;
     mDt = .03;
     mV0 = 12.57;

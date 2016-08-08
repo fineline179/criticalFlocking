@@ -27,8 +27,8 @@ class Community{
          *      the velocities of agents
          *      (size depens on DIM).
          */
-        Community(int nags, double L, Agent* ags, double* p, double* v, double* vN,
-                  double* agentSepInfos);
+        Community(int nags, int npreds, double L, Agent* ags, Agent* preds, double* p, double* v,
+                  double* vN, double* agentSepInfos);
         /* Return the pointer to the position array.
          * The position of agent *i* corresponds to
          * the values
@@ -78,6 +78,7 @@ class Community{
          */
         void sense_velocities(double* vel_sensed);
         double sense_velocities_and_velsq(double* vel_sensed, bool updateNeighbors = true);
+        double sense_velocities_and_velsq_danger(double* vel_sensed);
 
         void update_velocities(double* vel_sensed) ;
         /* Print the position and velocity of each
@@ -137,7 +138,8 @@ class Community{
         void fill_grid() ;
     protected:
         /* Number of agents. */
-        int num_agents ;
+        int num_agents;
+        int num_predators;
 
         double av_num_neighbors;
         /* positions of the agents 
@@ -156,7 +158,11 @@ class Community{
         /* Array of agents
          *      Size: num_agents
          */
-        Agent* agents ;
+        Agent* agents;
+        /* Array of predators
+        *      Size: num_predators
+        */
+        Agent* predators;
         /* Box size, same in all directions. */
         double box_size ;
         /* False by default. Turns to True

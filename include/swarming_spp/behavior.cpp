@@ -178,9 +178,6 @@ void Bialek_consensus::sense_velocity(Agent* ag, int num_agents, Agent* ags,
 
     *num_neighbors = num_neis;
     // 1) calc sum of velocity differences between agent and all neighbors
-    // NB: agent is included in its neighbor list, but the term for which the neighbor is the agent
-    //     itself contributes zero to the sum.
-    // cache source agent velocity
     double* ag_vel = ag->get_vel();
 
     for (j = 0; j < num_neis; j++)

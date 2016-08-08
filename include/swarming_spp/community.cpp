@@ -12,10 +12,13 @@
 
 /*----------------------- Community class --------------------------*/
 
-Community::Community(int nags , double L, Agent* ags , double* p, double* v, double* vN,
-                     double* agSepInfo){
+Community::Community(int nags , int npreds, double L, Agent* ags , Agent* preds, 
+                     double* p, double* v, double* vN, double* agSepInfo)
+{
     num_agents = nags ;
+    num_predators = npreds;
     agents = ags ;
+    predators = preds;
     pos = p ;
     vel = v ;
     velNorm = vN;
@@ -177,6 +180,16 @@ double Community::sense_velocities_and_velsq(double* vel_sensed, bool updateNeig
     return sum_of_vel_sq;
 }
 
+double Community::sense_velocities_and_velsq_danger(double* vel_sensed)
+{
+    this->sense_velocities_and_velsq(vel_sensed);
+
+    // flee from predators
+    for (int i = 0; i < num_agents; i++)
+         agents[i].sense_danger(num_predators, predators, vel_sensed + i*DIM);
+
+}
+
 void Community::update_velocities(double* vel_sensed)
 {
     for (int i = 0; i < num_agents; i++)
@@ -331,7 +344,7 @@ Agent** spp_community_alloc_neighbors(int num_agents){
     }
 
 Agent* spp_community_build_agents(int num_agents, double* pos, double* vel, double* velNorm,
-                                  /*Agent** neis,*/ Behavior* behavior){
+                                  Behavior* behavior){
     Agent* ags = spp_community_alloc_agents(num_agents) ;
     for (int ia = 0; ia < num_agents; ia++)
     {
@@ -342,14 +355,21 @@ Agent* spp_community_build_agents(int num_agents, double* pos, double* vel, doub
     return ags ;
 }
 
-Community spp_community_autostart(int num_agents, double speed, double box_size, Behavior* behavior){
+Community spp_community_autostart(int num_agents, int num_predators, double speed, double box_size, Behavior* behavior, Behavior* predsbeh)
+{
     double* pos     = spp_community_alloc_space(num_agents) ;
     double* vel     = spp_community_alloc_space(num_agents);
     double* velNorm = spp_community_alloc_space(num_agents);
     double* agentSepInfos = new double[num_agents * num_agents * (DIM + 1)];
     std::fill(agentSepInfos, agentSepInfos + num_agents * num_agents * (DIM + 1), 0.0);
-    Agent* ags      = spp_community_build_agents(num_agents, pos, vel, velNorm, /*neis,*/ behavior) ;
-    Community com = Community(num_agents, box_size, ags, pos, vel, velNorm, agentSepInfos);
+    Agent* ags      = spp_community_build_agents(num_agents, pos, vel, velNorm, behavior) ;
+
+    double* ppos = spp_community_alloc_space(num_predators);
+    double* pvel = spp_community_alloc_space(num_predators);
+    double* pvelNorm = spp_community_alloc_space(num_predators);
+    Agent* preds = spp_community_build_agents(num_predators, ppos, pvel, pvelNorm, predsbeh);
+
+    Community com = Community(num_agents, num_predators, box_size, ags, preds, pos, vel, velNorm, agentSepInfos);
 
     /* Starting positions and velocities */
     com.randomize_positions(15.0) ;
