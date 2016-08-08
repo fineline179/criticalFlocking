@@ -26,7 +26,7 @@ Community::Community(int nags , double L, Agent* ags , double* p, double* v, dou
     av_num_neighbors = 0.0;
 
     vel_sq_temp = new double;
-    num_neighbors_temp = new double;
+    num_neighbors_temp = new int;
 }
 
 double* Community::get_pos(){ return pos ; }
@@ -331,16 +331,14 @@ Agent** spp_community_alloc_neighbors(int num_agents){
     }
 
 Agent* spp_community_build_agents(int num_agents, double* pos, double* vel, double* velNorm,
-                                  Agent** neis, Behavior* behavior){
-    /* 
-     * WARNING: all the agents share the same
-     * *behavior* and the same *neis* pointer.
-     * Sharing the same *neis* pointer may screw with
-     * paralellization!
-     */
+                                  /*Agent** neis,*/ Behavior* behavior){
     Agent* ags = spp_community_alloc_agents(num_agents) ;
-    for(int ia=0; ia<num_agents; ia++)
+    for (int ia = 0; ia < num_agents; ia++)
+    {
+        // each agent has its own neighbor list
+        Agent** neis = spp_community_alloc_neighbors(num_agents);
         ags[ia] = Agent(pos + ia*DIM, vel + ia*DIM, velNorm + ia*DIM, neis, behavior);
+    }
     return ags ;
 }
 
@@ -350,8 +348,7 @@ Community spp_community_autostart(int num_agents, double speed, double box_size,
     double* velNorm = spp_community_alloc_space(num_agents);
     double* agentSepInfos = new double[num_agents * num_agents * (DIM + 1)];
     std::fill(agentSepInfos, agentSepInfos + num_agents * num_agents * (DIM + 1), 0.0);
-    Agent** neis    = spp_community_alloc_neighbors(num_agents) ;
-    Agent* ags      = spp_community_build_agents(num_agents, pos, vel, velNorm, neis, behavior) ;
+    Agent* ags      = spp_community_build_agents(num_agents, pos, vel, velNorm, /*neis,*/ behavior) ;
     Community com = Community(num_agents, box_size, ags, pos, vel, velNorm, agentSepInfos);
 
     /* Starting positions and velocities */

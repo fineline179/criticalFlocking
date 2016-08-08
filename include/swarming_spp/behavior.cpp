@@ -145,7 +145,7 @@ Bialek_consensus::Bialek_consensus(Interaction* ii, double vzero, double gamma,
 
 void Bialek_consensus::sense_velocity(Agent* ag, int num_agents, Agent* ags,
                                       double* new_vel, double* neis_vel_sq, 
-                                      double* num_neighbors, double* posPairs)
+                                      int* num_neighbors, double* posPairs)
 {
     int i, j;
     int num_neis;

@@ -42,6 +42,7 @@ Agent::Agent(double* p , double* v, double* vN, Agent** ns, Behavior* bb){
     vel = v ;
     velNorm = vN;
     neis = ns ;
+    num_neighs = 0;
     beh = bb ;
 
     spp_set_seed(time(NULL));
@@ -106,7 +107,17 @@ int Agent::is_neighbor(Agent* nei){
 }
 
 int Agent::get_neighbors(int n_agents, Agent* ags){
-    return beh->inter->get_neighbors( this, n_agents, ags, neis);
+    return beh->inter->get_neighbors(this, n_agents, ags, neis);
+}
+
+Agent** Agent::get_neighbor_list()
+{
+    return neis;
+}
+
+int Agent::get_num_neighs()
+{
+    return num_neighs;
 }
 
 void Agent::look_around(int n_agents, Agent* ags){
@@ -122,9 +133,10 @@ void Agent::sense_velocity(int num_agents, Agent* ags, double* new_vel, double* 
 }
 
 void Agent::sense_velocity(int num_agents, Agent* ags, double* new_vel, double* neis_vel_sq,
-                           double* num_neighbors, double* posPairs)
+                           int* num_neighbors, double* posPairs)
 {
     beh->sense_velocity(this, num_agents, ags, new_vel, neis_vel_sq, num_neighbors, posPairs);
+    num_neighs = *num_neighbors;
 }
 
 int Agent::sense_danger(int num_threats, Agent* threats, double* new_vel){

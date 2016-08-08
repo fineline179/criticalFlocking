@@ -177,7 +177,7 @@ class Community{
 
         // temp storage variables for retrieving info from agents
         double* vel_sq_temp;
-        double* num_neighbors_temp;
+        int* num_neighbors_temp;
 } ;
 
 // Utils for automatization of the setup of a Community.

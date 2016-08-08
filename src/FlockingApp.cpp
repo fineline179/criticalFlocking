@@ -22,6 +22,7 @@ class FlockingApp : public AppBasic {
     void drawGrid(float boxSize, float cellSpacing, float gridRadius);
     void drawC_sp_Graph();
     void drawBirdToBirdArrow(int fromIndex, int toIndex);
+    void drawBirdToNeighborsArrows(int fromIndex);
 
     bool     mPaused;
     bool     mShowGrid;
@@ -122,7 +123,7 @@ void FlockingApp::setup()
     birdTo          = 0;
     mPaused         = true;
     mShowGrid       = true;
-    birdDimFactor   = 0.25f;
+    birdDimFactor   = 0.4f;
 
     // SETUP SIMULATION PARAMETERS
     mBoxSize = 500.;
@@ -161,7 +162,7 @@ void FlockingApp::setup()
     // which bird to highlight (1-indexed). If 0, no highlighting.
     // TODO: unhardcode max and replace with NUM_INITIAL_PARTICLES
     mParams->addParam("Bird From", &birdFrom,
-                      "min=0.0 max=10.0 step=1.0 keyIncr=. keyDecr=,");
+                      "min=0.0 max=442.0 step=1.0 keyIncr=. keyDecr=,");
     mParams->addParam("Bird To", &birdTo,
                       "min=0.0 max=10.0 step=1.0 keyIncr=l keyDecr=k");
     mParams->addParam("Paused", &mPaused, "keyIncr=space");
@@ -321,8 +322,8 @@ void FlockingApp::draw()
         spp_particles[birdToIndex].drawTail();
         glEnd();
 
-        // draw arrow from 'from' bird to 'to' bird
-        drawBirdToBirdArrow(birdFromIndex, birdToIndex);
+        // draw arrows from 'from' bird to all its neighbors
+        drawBirdToNeighborsArrows(birdFromIndex);
     }
 
     // Draw average velocity of flock
@@ -432,6 +433,32 @@ void FlockingApp::drawBirdToBirdArrow(int fromIndex, int toIndex)
         gl::color(ColorA(0.0f, 1.0f, 1.0f, 1.0f));
         gl::drawVector(fromPos, fromPos + toDisplacement / 2, 0.2, .06);
         gl::drawLine(fromPos + toDisplacement / 2, fromPos + toDisplacement);
+    }
+}
+
+void FlockingApp::drawBirdToNeighborsArrows(int fromIndex)
+{
+    if (fromIndex >= 0)
+    {
+        double* cp = com.get_pos();
+        double* agSepInfo = com.get_AgentSepInfo();
+
+        Agent* ags = com.get_agents();
+        Agent** neis = ags[fromIndex].get_neighbor_list();
+        int num_neis = ags[fromIndex].get_num_neighs();
+
+        for (int i = 0; i < num_neis; i++)
+        {
+            // neighbor index is address of neighbor - address of beginning of agent array
+            int toIndex = neis[i] - ags;
+            auto fromPos = Vec3f(cp[3 * fromIndex], cp[3 * fromIndex + 1], cp[3 * fromIndex + 2]);
+            auto toDisplacement = Vec3f(agSepInfo[fromIndex * 4 * mN + toIndex * 4],
+                                        agSepInfo[fromIndex * 4 * mN + toIndex * 4 + 1],
+                                        agSepInfo[fromIndex * 4 * mN + toIndex * 4 + 2]);
+            gl::color(ColorA(0.0f, 1.0f, 1.0f, 1.0f));
+            gl::drawVector(fromPos, fromPos + toDisplacement / 2, 0.2, .06);
+            gl::drawLine(fromPos + toDisplacement / 2, fromPos + toDisplacement);
+        }
     }
 }
 

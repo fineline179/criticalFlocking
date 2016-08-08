@@ -80,14 +80,19 @@ class Agent {
          * agents in *ags* that are neighbors
          * of the agent into *neis*.
          */
-        int get_neighbors(int n_agents, Agent* ags) ;
+        int get_neighbors(int n_agents, Agent* ags);
+
+        // returns pointer to list of neighbors. Note only the first
+        Agent** get_neighbor_list();
+        // returns current number of neighbors of agent (used in balanced topological)
+        int get_num_neighs();
         /* Store the sensed velocity in *new_vel*.
          * Defined by the Behavior *beh*.
          */
         void sense_velocity(int num_agents, Agent* ags, double* new_vel);
         void sense_velocity(int num_agents, Agent* ags, double* new_vel, double* neis_vel_sq);
         void sense_velocity(int num_agents, Agent* ags, double* new_vel, double* neis_vel_sq,
-                            double* num_neighbors, double* posPairs);
+                            int* num_neighbors, double* posPairs);
         /* Same as sense_velocity but using
          * the sense_danger function from *beh*.
          */
@@ -108,6 +113,7 @@ class Agent {
         double* velNorm;
         /* neighbors of the agent */
         Agent** neis ;
+        int     num_neighs;
         /* behavior (consensus protocol)
          * of the agent. */
         Behavior* beh ;
