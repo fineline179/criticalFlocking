@@ -213,6 +213,8 @@ void Bialek_consensus::sense_velocity(Agent* ag, int num_agents, Agent* ags,
         nei_pos = neis[j]->get_pos();
         // distance between source and neighbor j
         ag_nei_dist = sqrt(ge->distance2(ag_pos, nei_pos));
+        // TODO: see if we can remove this since balanced topological neighbors DON'T include 
+        //       the source
         // skip self interaction
         if (ag_nei_dist == 0.0f)
             continue;
@@ -244,7 +246,7 @@ void Bialek_consensus::sense_velocity(Agent* ag, int num_agents, Agent* ags,
         }
     }
     for (i = 0; i < DIM; i++)
-        neiAttract_force[i] *= (dt / (num_neis - 1));
+        neiAttract_force[i] *= (dt / num_neis);
 
     // 4) calc noise term
     for (i = 0; i < DIM; i++)
@@ -255,7 +257,13 @@ void Bialek_consensus::sense_velocity(Agent* ag, int num_agents, Agent* ags,
     // sum of all FOUR terms
     double delta_vel[DIM];
     for (i = 0; i < DIM; i++)
+    {
         new_vel[i] = ag_vel[i] + (neiMatch_vel[i] + match_vel_Av[i] + neiAttract_force[i] + noise_force[i]);
+        //if (new_vel[i] > 100000.)
+        //{
+        //    int breakit = 1;
+        //}
+    }
 
 }
 //

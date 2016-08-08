@@ -119,8 +119,8 @@ void FlockingApp::setup()
     mAvNumNeighbors = 0.0;
     mFlockPolarization = new double[3];
 
-    birdFrom        = 0;
-    birdTo          = 0;
+    birdFrom        = -1;
+    birdTo          = -1;
     mPaused         = true;
     mShowGrid       = true;
     birdDimFactor   = 0.4f;
@@ -162,9 +162,9 @@ void FlockingApp::setup()
     // which bird to highlight (1-indexed). If 0, no highlighting.
     // TODO: unhardcode max and replace with NUM_INITIAL_PARTICLES
     mParams->addParam("Bird From", &birdFrom,
-                      "min=0.0 max=442.0 step=1.0 keyIncr=. keyDecr=,");
+                      "min=-1.0 max=9.0 step=1.0 keyIncr=. keyDecr=,");
     mParams->addParam("Bird To", &birdTo,
-                      "min=0.0 max=10.0 step=1.0 keyIncr=l keyDecr=k");
+                      "min=0.0 max=9.0 step=1.0 keyIncr=l keyDecr=k");
     mParams->addParam("Paused", &mPaused, "keyIncr=space");
     mParams->addParam("Draw grid", &mShowGrid, "keyIncr=g");
     mParams->addSeparator();
@@ -274,9 +274,12 @@ void FlockingApp::draw()
     gl::drawStrokedCube(Vec3f(mBoxSize / 2, mBoxSize / 2, mBoxSize / 2), 
                         Vec3f(mBoxSize, mBoxSize, mBoxSize));
 
-    // DRAW SWARMING_SPP PARTICLES
+    //// Draw particles
+    int birdFromInd = (int) birdFrom;
+    int birdToInd   = (int) birdTo;
+
     // no highlighting
-    if ((int) birdFrom == 0)
+    if ((int) birdFromInd == -1)
     {
         gl::color(ColorA(1.0f, 1.0f, 1.0f, 1.0f));
         for (int i = 0; i < mN; i++)
@@ -294,36 +297,33 @@ void FlockingApp::draw()
         //// draw all but from and to birds dimmed
         // particles
         gl::color(ColorA(birdDimFactor, birdDimFactor, birdDimFactor, 1.0f));
-        for (int i = 0; i < (int) birdFrom - 1; i++)
+        for (int i = 0; i < birdFromInd; i++)
             spp_particles[i].draw();
-        for (int i = (int) birdFrom; i < mN; i++)
+        for (int i = birdFromInd + 1; i < mN; i++)
             spp_particles[i].draw();
 
         // tails
         glBegin(GL_LINES);
-        for (int i = 0; i < (int) birdFrom - 1; i++)
+        for (int i = 0; i < birdFromInd; i++)
             spp_particles[i].drawTail(birdDimFactor);
-        for (int i = (int) birdFrom; i < mN; i++)
+        for (int i = birdFromInd + 1; i < mN; i++)
             spp_particles[i].drawTail(birdDimFactor);
         glEnd();
-
-        int birdFromIndex = (int) birdFrom - 1;
-        int birdToIndex   = (int) birdTo - 1;
 
         // draw from bird in standard color, slightly bigger
         gl::color(ColorA(1.0f, 1.0f, 1.0f, 1.0f));
-        spp_particles[birdFromIndex].draw(1.6);
+        spp_particles[birdFromInd].draw(1.6);
         // draw to bird in blue, slightly bigger
         gl::color(ColorA(0.0f, 0.0f, 1.0f, 1.0f));
-        spp_particles[birdToIndex].draw(1.6);
+        spp_particles[birdToInd].draw(1.6);
         // draw from and to bird's tails
         glBegin(GL_LINES);
-        spp_particles[birdFromIndex].drawTail();
-        spp_particles[birdToIndex].drawTail();
+        spp_particles[birdFromInd].drawTail();
+        spp_particles[birdToInd].drawTail();
         glEnd();
 
         // draw arrows from 'from' bird to all its neighbors
-        drawBirdToNeighborsArrows(birdFromIndex);
+        drawBirdToNeighborsArrows(birdFromInd);
     }
 
     // Draw average velocity of flock
