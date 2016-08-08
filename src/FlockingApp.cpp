@@ -7,6 +7,7 @@
 #include "swarming_spp/community.h"
 #include "cinder/Rand.h"
 #include "swarming_spp/grid.h"
+#include <math.h>
 
 using namespace ci;
 using namespace ci::app;
@@ -20,6 +21,7 @@ class FlockingApp : public AppBasic {
 	void draw();
     void drawGrid(float boxSize, float cellSpacing, float gridRadius);
     void drawC_sp_Graph();
+    void drawBirdToBirdArrow(int fromIndex, int toIndex);
 
     bool     mPaused;
     bool     mShowGrid;
@@ -91,8 +93,6 @@ class FlockingApp : public AppBasic {
 
     // similarity of velocity of nearest neighbors in flock. Eq. (1) in 1307.5563
     double mQ_int;
-
-    double mC_sp_1;
 };
 
 
@@ -108,7 +108,7 @@ void FlockingApp::setup()
 {	
     // SETUP STATISTICAL VARIABLES
     mNumRadialBins = 20;
-    mRadialCorMaxRange = 15.0;
+    mRadialCorMaxRange = 25.0;
     //mC_sp_r = new double[20];
     //mC_sp_r_count = new int[20];
     mC_sp_r = std::vector<double>(20);
@@ -126,14 +126,14 @@ void FlockingApp::setup()
 
     // SETUP SIMULATION PARAMETERS
     mBoxSize = 500.;
-    // small number of agents for agent separation matrix testing
-    mN = 200;
-    mJ = 19.0; mG = 0.2;
+    mN = 442;
+    mJ = 10.0; mG = 0.08;
     mDt = .03;
-    mV0 = 12.57;
-    mTemp = 0.7;
+    mV0 = 10.13;
+    //mTemp = 0.93;
+    mTemp = 0.5;
     m_nc = 8.;
-    mBalanceAngle = 30.0;
+    mBalanceAngle = 32.0;
     ra = 0.8; rb = 0.2; re = 0.5; 
     // make this large for unlimited small attraction range on non-balanced topological interactions
     r0 = 1000.;
@@ -153,11 +153,12 @@ void FlockingApp::setup()
     mParams->addParam("g",  &mG,  "min=0.1 max=20.0 step=0.1 keyIncr=v keyDecr=c");
     mParams->addParam("Temp", &mTemp, "min=0.025 max=2.0 step=0.025 keyIncr=y keyDecr=t");
     mParams->addParam("nc", &m_nc, "min=2.0 max=25.0 step=1.0 keyIncr=r keyDecr=e");
-    mParams->addParam("Balance Angle", &mBalanceAngle, "min=5.0 max=180.0 step=1.0 keyIncr=o keyDecr=i");
+    mParams->addParam("Balance Angle", &mBalanceAngle, 
+                      "min=5.0 max=180.0 step=1.0 keyIncr=o keyDecr=i");
     mParams->addSeparator();
     mParams->addParam("Eye Distance", &mCameraDistance,
                       "min=5.0 max=1500.0 step=1.0 keyIncr=s keyDecr=w" );
-    // which bird to highlist (1-indexed). If 0, no highlighting.
+    // which bird to highlight (1-indexed). If 0, no highlighting.
     // TODO: unhardcode max and replace with NUM_INITIAL_PARTICLES
     mParams->addParam("Bird From", &birdFrom,
                       "min=0.0 max=10.0 step=1.0 keyIncr=. keyDecr=,");
@@ -170,7 +171,6 @@ void FlockingApp::setup()
     mParams->addParam("Av Num Neighs", &mAvNumNeighbors, true);
     mParams->addParam("Polarization", &mFlockPolarization_mag, true);
     mParams->addParam("Q_int", &mQ_int, true);
-    mParams->addParam("C_sp[0]", &mC_sp_1, true);
 
     // CREATE SWARMING_SPP containers
     dist2 = spp_community_alloc_space(mN);
@@ -231,11 +231,9 @@ void FlockingApp::update()
     if (!mPaused)
     {
         // compute C_sp(r): speed correlation of agents as function of agent separation
-        // HARDCODED: only out to dist of 20.0, with 20 bins of 1.0 width each
-        //com.correlation_histo(mRadialCorMaxRange, mNumRadialBins, mV0, mC_sp_r, mC_sp_r_count);
-        //mC_sp_1 = mC_sp_r[0];
+        com.correlation_histo(mRadialCorMaxRange, mNumRadialBins, mV0, mC_sp_r, mC_sp_r_count);
 
-        // UPDATE SWARMING_SPP particle velocities
+        // update spp particle velocities
         double sum_of_velsq = com.sense_velocities_and_velsq(v2);
         mAvNumNeighbors = com.get_av_num_neighbors();
 
@@ -244,12 +242,13 @@ void FlockingApp::update()
         com.update_velocities(v2);
         com.move(mDt);
 
-        // BALANCED MOD
+        // update matrix of agent separations
         com.updateAgentSepInfo();
 
         double* cp = com.get_pos();
         double* cv = com.get_vel();
 
+        // update Cinder particle objects from spp data
         for (int i = 0; i < mN; i++)
         {
             spp_particles[i].updatePos_spp(cp[3 * i], cp[3 * i + 1], cp[3 * i + 2]);
@@ -273,8 +272,6 @@ void FlockingApp::draw()
     gl::color(ColorA(1.0f, 1.0f, 1.0f, 1.0f));
     gl::drawStrokedCube(Vec3f(mBoxSize / 2, mBoxSize / 2, mBoxSize / 2), 
                         Vec3f(mBoxSize, mBoxSize, mBoxSize));
-
-
 
     // DRAW SWARMING_SPP PARTICLES
     // no highlighting
@@ -325,23 +322,7 @@ void FlockingApp::draw()
         glEnd();
 
         // draw arrow from 'from' bird to 'to' bird
-        if (birdToIndex >= 0 && birdToIndex != birdFromIndex)
-        {
-            double* cp = com.get_pos();
-            double* agSepInfo = com.get_AgentSepInfo();
-
-            auto fromPos =
-                Vec3f(cp[3 * birdFromIndex],
-                cp[3 * birdFromIndex + 1],
-                cp[3 * birdFromIndex + 2]);
-            auto toDisplacement =
-                Vec3f(agSepInfo[birdFromIndex * 4 * mN + birdToIndex * 4],
-                agSepInfo[birdFromIndex * 4 * mN + birdToIndex * 4 + 1],
-                agSepInfo[birdFromIndex * 4 * mN + birdToIndex * 4 + 2]);
-            gl::color(ColorA(0.0f, 1.0f, 1.0f, 1.0f));
-            gl::drawVector(fromPos, fromPos + toDisplacement / 2, 0.2, .06);
-            gl::drawLine(fromPos + toDisplacement / 2, fromPos + toDisplacement);
-        }
+        drawBirdToBirdArrow(birdFromIndex, birdToIndex);
     }
 
     // Draw average velocity of flock
@@ -351,11 +332,16 @@ void FlockingApp::draw()
     gl::drawVector(avPos, avPos + avVel / 3, 0.3, .1);
 
     // Draw pair velocity correlation as function of separation graph
-    //drawC_sp_Graph();
+    drawC_sp_Graph();
 	
 	// Draw Params window
 	mParams->draw();
 }
+
+
+//////////////////////////////////////////////////////////////////////////
+// Helper graphing methods
+//////////////////////////////////////////////////////////////////////////
 
 void FlockingApp::drawGrid(float boxSize, float cellSpacing, float gridRadius)
 {
@@ -396,31 +382,58 @@ void FlockingApp::drawGrid(float boxSize, float cellSpacing, float gridRadius)
 
 void FlockingApp::drawC_sp_Graph()
 {
+    // set graph height scale to max correlation magnitude
+    double scale = 0.;
+    for (size_t i = 0; i < mC_sp_r.size(); i++)
+    {
+        double val = fabs(mC_sp_r[i]);
+        if (val > scale)
+            scale = val;
+    }
+    // dont run until initialized
+    if (scale == 0.) return;
+
     double binW = 200.0 / mNumRadialBins;
     double barW = 0.9 * binW;
-    double scale = mC_sp_r[0];
     gl::disableDepthRead();
     gl::disableDepthWrite();
     gl::setMatricesWindow(getWindowSize());
     gl::pushModelView();
-    //gl::translate(Vec3f(117.0f, getWindowHeight() - 117.0f, 0.0f));
-    gl::translate(Vec3f(10.0f, getWindowHeight() - 10.0f - 600.0 / 2, 0.0f));
-        gl::color(ColorA(1.0f, 1.0f, 1.0f, 1.0f));
-        // draw graph axes
-        gl::drawLine(Vec2f(0.0f, 0.0f), Vec2f(200.0f, 0.0f)); // x axis
-        gl::drawLine(Vec2f(0.0f, 100.0f), Vec2f(0.0f, -100.0f)); // y axis
-        // draw graph bars
-        gl::color(ColorA(0.25f, 0.25f, 1.0f, 1.0f));
-        // width of graph will be 200 pixels
-        // draw graph bars
-        for (int i = 1; i <= mNumRadialBins; i++)
-        {
-            gl::drawSolidRect(
-                Rectf(i*binW - barW / 2, 0.,
-                      i*binW + barW / 2, -(100 * mC_sp_r[i - 1] / scale))
-            );
-        }
+      gl::translate(Vec3f(10.0f, getWindowHeight() - 10.0f - 600.0 / 2, 0.0f));
+      gl::color(ColorA(1.0f, 1.0f, 1.0f, 1.0f));
+      // draw graph axes
+      gl::drawLine(Vec2f(0.0f, 0.0f), Vec2f(200.0f, 0.0f)); // x axis
+      gl::drawLine(Vec2f(0.0f, 100.0f), Vec2f(0.0f, -100.0f)); // y axis
+      // draw graph bars
+      gl::color(ColorA(0.25f, 0.25f, 1.0f, 1.0f));
+      // width of graph will be 200 pixels
+      // draw graph bars
+      for (int i = 1; i <= mNumRadialBins; i++)
+      {
+          gl::drawSolidRect(
+              Rectf(i*binW - barW / 2, 0.,
+                    i*binW + barW / 2, -(100 * mC_sp_r[i - 1] / scale))
+          );
+      }
     gl::popModelView();
 }
 
-CINDER_APP_BASIC( FlockingApp, RendererGl )
+void FlockingApp::drawBirdToBirdArrow(int fromIndex, int toIndex)
+{
+    if (toIndex >= 0 && toIndex != fromIndex)
+    {
+        double* cp = com.get_pos();
+        double* agSepInfo = com.get_AgentSepInfo();
+
+        auto fromPos = Vec3f(cp[3 * fromIndex], cp[3 * fromIndex + 1], cp[3 * fromIndex + 2]);
+        auto toDisplacement = Vec3f(agSepInfo[fromIndex * 4 * mN + toIndex * 4],
+                                    agSepInfo[fromIndex * 4 * mN + toIndex * 4 + 1],
+                                    agSepInfo[fromIndex * 4 * mN + toIndex * 4 + 2]);
+        gl::color(ColorA(0.0f, 1.0f, 1.0f, 1.0f));
+        gl::drawVector(fromPos, fromPos + toDisplacement / 2, 0.2, .06);
+        gl::drawLine(fromPos + toDisplacement / 2, fromPos + toDisplacement);
+    }
+}
+
+
+CINDER_APP_BASIC(FlockingApp, RendererGl)

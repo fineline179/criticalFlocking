@@ -150,7 +150,6 @@ TopoBalanced::TopoBalanced(int kk, double mumu, Geometry* gg, double* dd)
     dists = dd;
 }
 
-
 int TopoBalanced::get_neighbors(Agent* a0, int a0_num, int n_agents, Agent* ags, Agent** neis,
                                 double* pos_pairs)
 {

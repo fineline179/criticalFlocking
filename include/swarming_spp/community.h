@@ -108,29 +108,15 @@ class Community{
          *  the agents are.
          */
         double order_parameter(double v0) ;
-        /* Compute the correlations in velocity fluctuations in the system.
-         * Mathematical formulation based on the work by Attanasi et al. in
-         *      PLoS Comput Biol 10, e1003697 (2014)
-         *
-         * The function computes the total correlation *totalcorr* and the
-         * count of pairs of agents at a certain distance *count* separate
-         * instead of returning just *totalcorr/count* (Eq 2) to be able
-         * to compute correctly the cumulative correlation (Eq 3) and
-         * the susceptibility.
-         * The total correlation at the bin *i*, *totalcorr[i]*, corresponds
-         * to the sum of correlations between agents at a distance *r* such
-         * that
-         *      i * max_dist() / n_bins < r < (i+1) * max_dist() / n_bins
-         * The *count[i]* is the number of agents at such a distance from
-         * each other.
-         *
-         * WARNING: The normalizing factor *norm* assumes that all the agents
-         * have velocity with modulus *v0*.
-         */
+        /*
+        * Computes the correlations in speed fluctuations in the system.
+        *
+        * The function computes the total correlation *totalcorr* and the
+        * count of pairs of agents at a certain distance *count*.
+        */
         void correlation_histo(double maxRadius, int n_bins, double v0, 
                                std::vector<double>& totalcorr,
-                               std::vector<int>& count 
-                               /*double* totalcorr, int* count*/);
+                               std::vector<int>& count);
 
         /* Return the distance between the two farthest points in
         * the computation box with periodic boundary conditions.

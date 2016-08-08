@@ -249,32 +249,15 @@ double Community::order_parameter(double v0)
 //       somewhere else already)
 void Community::correlation_histo(double maxRadius, int n_bins, double v0, 
                                   std::vector<double>& totalcorr, 
-                                  std::vector<int>& count 
-                                  /*double* totalcorr, int* count*/)
+                                  std::vector<int>& count)
 {
-    /*
-     * Compute the correlations in speed fluctuations in the system.
-     * Mathematical formulation based on the work by Attanasi et al. in
-     *      PLoS Comput Biol 10, e1003697 (2014)
-     *
-     * The function computes the total correlation *totalcorr* and the
-     * count of pairs of agents at a certain distance *count* separate
-     * instead of returning just *totalcorr/count* (Eq 2) to be able
-     * to compute correctly the cumulative correlation (Eq 3) and
-     * the susceptibility.
-     *
-     * WARNING: The normalizing factor *norm* assumes that all the agents
-     * have velocity with modulus *v0*.
-     *
-     */
     int i, ia, ja, bin;
     double mv[DIM] ;
     double *v1, *v2 ;
     double dist, meanSpeed, speed1, speed2;
     double bindist = n_bins / maxRadius;
 
-    for (i = 0; i < n_bins; i++)
-    {
+    for (i = 0; i < n_bins; i++){
         totalcorr[i] = 0.; 
         count[i] = 0;
     }
@@ -289,20 +272,17 @@ void Community::correlation_histo(double maxRadius, int n_bins, double v0,
             speed2 = sqrt(v2[0] * v2[0] + v2[1] * v2[1] + v2[2] * v2[2]);
             dist = sqrt( agents[ia].distance2( agents[ja].get_pos() ) ) ;
             bin = int(dist * bindist);
-            // make sure we don't write outside of memory bounds when an agent gets outside our max range
-            if (bin < n_bins)
-            {
+            // NB: don't write outside of memory bounds when an agent gets outside our max range
+            if (bin < n_bins){
                 count[bin] += 1;
-                // note we are using the CURRENT measured mean speed of the flock in mv, rather than 
-                //  the set mean speed parameter
+                // note we are using the CURRENT measured mean speed of the flock in mv,
+                //  rather than the set mean speed parameter
                 totalcorr[bin] += (speed1 - meanSpeed) * (speed2 - meanSpeed);
             }
         }
     }
 
-    for (i = 0; i < n_bins; i++)
-    {
-        //totalcorr[i] *= norm;
+    for (i = 0; i < n_bins; i++){
         if (count[i] != 0)
             totalcorr[i] /= count[i];
     }
