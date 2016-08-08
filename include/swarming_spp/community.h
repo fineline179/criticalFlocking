@@ -77,7 +77,7 @@ class Community{
          * own *vel* as *vel_sensed*.
          */
         void sense_velocities(double* vel_sensed);
-        double sense_velocities_and_velsq(double* vel_sensed);
+        double sense_velocities_and_velsq(double* vel_sensed, bool updateNeighbors = true);
 
         void update_velocities(double* vel_sensed) ;
         /* Print the position and velocity of each

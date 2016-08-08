@@ -79,6 +79,9 @@ class FlockingApp : public AppBasic {
 
     int mRadialCorMaxRange;
     int mNumRadialBins;
+    // update neighbor list every this number of frames
+    int mNeighborUpdateFrequency;
+    int mFrameCounter;
     // Correlation of speed of bird pairs as func of separation
     //double* mC_sp_r;
     std::vector<double> mC_sp_r;
@@ -109,7 +112,10 @@ void FlockingApp::setup()
 {	
     // SETUP STATISTICAL VARIABLES
     mNumRadialBins = 20;
-    mRadialCorMaxRange = 25.0;
+    mRadialCorMaxRange = 25;
+    mNeighborUpdateFrequency = 1;
+    // set frameCounter so neighbors update on first frame
+    mFrameCounter = mNeighborUpdateFrequency;
     //mC_sp_r = new double[20];
     //mC_sp_r_count = new int[20];
     mC_sp_r = std::vector<double>(20);
@@ -119,22 +125,22 @@ void FlockingApp::setup()
     mAvNumNeighbors = 0.0;
     mFlockPolarization = new double[3];
 
-    birdFrom        = -1;
-    birdTo          = -1;
+    birdFrom        = -1.;
+    birdTo          = -1.;
     mPaused         = true;
     mShowGrid       = true;
     birdDimFactor   = 0.4f;
 
     // SETUP SIMULATION PARAMETERS
     mBoxSize = 500.;
-    mN = 442;
-    mJ = 10.0; mG = 0.08;
+    mN = 1047;
+    //mJ = 10.0; mG = 0.08;
+    mJ = 19.0; mG = 0.2;
     mDt = .03;
-    mV0 = 10.13;
-    //mTemp = 0.93;
-    mTemp = 0.5;
+    mV0 = 12.57;
+    mTemp = 0.55;
     m_nc = 8.;
-    mBalanceAngle = 32.0;
+    mBalanceAngle = 51.0;
     ra = 0.8; rb = 0.2; re = 0.5; 
     // make this large for unlimited small attraction range on non-balanced topological interactions
     r0 = 1000.;
@@ -151,9 +157,8 @@ void FlockingApp::setup()
     mParams->addParam("Scene Rotation", &mSceneRotation, "opened=1");
     mParams->addSeparator();
     mParams->addParam("J", &mJ, "min=1.0 max=60.0 step=1.0 keyIncr=f keyDecr=d");
-    mParams->addParam("g",  &mG,  "min=0.1 max=20.0 step=0.1 keyIncr=v keyDecr=c");
+    mParams->addParam("g",  &mG,  "min=0.01 max=0.5 step=0.01 keyIncr=v keyDecr=c");
     mParams->addParam("Temp", &mTemp, "min=0.025 max=2.0 step=0.025 keyIncr=y keyDecr=t");
-    mParams->addParam("nc", &m_nc, "min=2.0 max=25.0 step=1.0 keyIncr=r keyDecr=e");
     mParams->addParam("Balance Angle", &mBalanceAngle, 
                       "min=5.0 max=180.0 step=1.0 keyIncr=o keyDecr=i");
     mParams->addSeparator();
@@ -226,7 +231,6 @@ void FlockingApp::update()
 	
     behavior->setJandG(mJ, mG);
     behavior->setTemp(mTemp);
-    interaction->setOutdegree((int) m_nc);
     interaction->setCriticalAngle(mBalanceAngle);
 
     if (!mPaused)
@@ -234,12 +238,11 @@ void FlockingApp::update()
         // compute C_sp(r): speed correlation of agents as function of agent separation
         com.correlation_histo(mRadialCorMaxRange, mNumRadialBins, mV0, mC_sp_r, mC_sp_r_count);
 
-        // update spp particle velocities
         double sum_of_velsq = com.sense_velocities_and_velsq(v2);
         mAvNumNeighbors = com.get_av_num_neighbors();
 
         // update Q_int
-        mQ_int = sum_of_velsq / (2 * mV0*mV0*mN*m_nc);
+        mQ_int = sum_of_velsq / (2 * mV0*mV0*mN*mAvNumNeighbors);
         com.update_velocities(v2);
         com.move(mDt);
 
@@ -268,18 +271,18 @@ void FlockingApp::draw()
 	gl::enableDepthWrite();
 	
     if (mShowGrid)
-        drawGrid(mBoxSize, 2.0f, 5.0f);
+        drawGrid(mBoxSize, 4.0f, 16.0f);
 	
     gl::color(ColorA(1.0f, 1.0f, 1.0f, 1.0f));
     gl::drawStrokedCube(Vec3f(mBoxSize / 2, mBoxSize / 2, mBoxSize / 2), 
                         Vec3f(mBoxSize, mBoxSize, mBoxSize));
 
     //// Draw particles
-    int birdFromInd = (int) birdFrom;
-    int birdToInd   = (int) birdTo;
+    int birdFromInd = (int) (floorf(birdFrom + .0001));
+    int birdToInd = (int) (floorf(birdTo + .0001));
 
     // no highlighting
-    if ((int) birdFromInd == -1)
+    if (birdFromInd == -1)
     {
         gl::color(ColorA(1.0f, 1.0f, 1.0f, 1.0f));
         for (int i = 0; i < mN; i++)

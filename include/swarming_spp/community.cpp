@@ -94,15 +94,14 @@ void Community::move(double dt){
 
 void Community::updateAgentSepInfo()
 {
-    int i, j, k;
     double temp;
 
-    for (i = 0; i < num_agents - 1; i++){
-        for (j = i + 1; j < num_agents; j++){
+    for (int i = 0; i < num_agents - 1; i++){
+        for (int j = i + 1; j < num_agents; j++){
             // make sure to accumulate sep squared on 0
             agentSepInfo[i * 4 * num_agents + j * 4 + 3] = 0.0;
             agentSepInfo[j * 4 * num_agents + i * 4 + 3] = 0.0;
-            for (k = 0; k < 3; k++){
+            for (int k = 0; k < 3; k++){
                 temp = pos[DIM*j + k] - pos[DIM*i + k];
                 agentSepInfo[i * 4 * num_agents + j * 4 + k] = temp;
                 // symmetric entry in matrix
@@ -136,7 +135,7 @@ void Community::sense_velocities(double* vel_sensed){
     }
 }
 
-double Community::sense_velocities_and_velsq(double* vel_sensed)
+double Community::sense_velocities_and_velsq(double* vel_sensed, bool updateNeighbors)
 {
     double sum_of_vel_sq = 0;
     *vel_sq_temp = 0.;
@@ -156,7 +155,7 @@ double Community::sense_velocities_and_velsq(double* vel_sensed)
         {
             neis = grid->get_neighborhood(agents + i, &num_neis);
             agents[i].sense_velocity(num_neis, neis, vel_sensed + i*DIM, vel_sq_temp,
-                                     num_neighbors_temp, agentSepInfo);
+                                     num_neighbors_temp, agentSepInfo, updateNeighbors);
             sum_of_vel_sq += *vel_sq_temp;
             av_num_neighbors += *num_neighbors_temp;
         }
@@ -167,7 +166,8 @@ double Community::sense_velocities_and_velsq(double* vel_sensed)
         for (int i = 0; i < num_agents; i++)
         {
             agents[i].sense_velocity(num_agents, agents, vel_sensed + i*DIM, vel_sq_temp,
-                                     num_neighbors_temp, agentSepInfo + i * 4 * num_agents);
+                                     num_neighbors_temp, agentSepInfo + i * 4 * num_agents,
+                                     updateNeighbors);
             sum_of_vel_sq += *vel_sq_temp;
             av_num_neighbors += *num_neighbors_temp;
         }
@@ -352,7 +352,7 @@ Community spp_community_autostart(int num_agents, double speed, double box_size,
     Community com = Community(num_agents, box_size, ags, pos, vel, velNorm, agentSepInfos);
 
     /* Starting positions and velocities */
-    com.randomize_positions(5.0) ;
+    com.randomize_positions(15.0) ;
     com.randomize_directions(speed) ;
     return com ;
 }

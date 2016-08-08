@@ -133,9 +133,10 @@ void Agent::sense_velocity(int num_agents, Agent* ags, double* new_vel, double* 
 }
 
 void Agent::sense_velocity(int num_agents, Agent* ags, double* new_vel, double* neis_vel_sq,
-                           int* num_neighbors, double* posPairs)
+                           int* num_neighbors, double* posPairs, bool updateNeighbors)
 {
-    beh->sense_velocity(this, num_agents, ags, new_vel, neis_vel_sq, num_neighbors, posPairs);
+    beh->sense_velocity(this, num_agents, ags, new_vel, neis_vel_sq, num_neighbors, posPairs,
+                        updateNeighbors);
     num_neighs = *num_neighbors;
 }
 

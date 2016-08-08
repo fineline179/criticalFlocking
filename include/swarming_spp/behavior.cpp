@@ -145,7 +145,8 @@ Bialek_consensus::Bialek_consensus(Interaction* ii, double vzero, double gamma,
 
 void Bialek_consensus::sense_velocity(Agent* ag, int num_agents, Agent* ags,
                                       double* new_vel, double* neis_vel_sq, 
-                                      int* num_neighbors, double* posPairs)
+                                      int* num_neighbors, double* posPairs,
+                                      bool updateNeighbors)
 {
     int i, j;
     int num_neis;
@@ -167,18 +168,21 @@ void Bialek_consensus::sense_velocity(Agent* ag, int num_agents, Agent* ags,
     // gets _location_ of neighbor list for source agent "ag"
     Agent** neis = ag->get_neis();
 
-    // fill neighborlist for *ag* with all relevant topological neighbors.
-    // there should be num_neis - 1 actual neighbors (ie we don't include the source agent) 
+    // fill neighborlist for *ag* with all relevant balanced topological neighbors. Or use
+    //  neighbors from previous call to inter->get_neighbors
+    if (updateNeighbors)
+        // NB: this is a hack and will break for grid use
+        num_neis = inter->get_neighbors(ag, ag - ags, num_agents, ags, neis, posPairs);
+    else
+        num_neis = ag->get_num_neighs();
 
-    //num_neis = inter->get_neighbors(ag, num_agents, ags, neis);
-    num_neis = inter->get_neighbors(ag, ag - ags /* THIS IS A HACK AND WILL BREAK FOR GRID USE */, num_agents, ags, neis, posPairs);
     *num_neighbors = num_neis;
-
     // 1) calc sum of velocity differences between agent and all neighbors
     // NB: agent is included in its neighbor list, but the term for which the neighbor is the agent
     //     itself contributes zero to the sum.
     // cache source agent velocity
     double* ag_vel = ag->get_vel();
+
     for (j = 0; j < num_neis; j++)
     {
         for (i = 0; i < DIM; i++)
