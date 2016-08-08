@@ -193,7 +193,7 @@ void FlockingApp::setup()
     //grid        = new Grid(nSlots, BOX_SIZE, NUM_INITIAL_PARTICLES);
     //com.setup_grid(grid);
     
-    // create particles
+    // create Cinder particles
     for (int i = 0; i < mN; i++)
         spp_particles.push_back(Particle(Vec3f(), Vec3f()));
 }

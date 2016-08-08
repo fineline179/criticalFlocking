@@ -174,6 +174,10 @@ class Community{
 
         // matrix of separtion info between all agents
         double* agentSepInfo;
+
+        // temp storage variables for retrieving info from agents
+        double* vel_sq_temp;
+        double* num_neighbors_temp;
 } ;
 
 // Utils for automatization of the setup of a Community.

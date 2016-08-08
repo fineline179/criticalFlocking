@@ -24,6 +24,9 @@ Community::Community(int nags , double L, Agent* ags , double* p, double* v, dou
     use_grid = false ;
     grid = NULL ;
     av_num_neighbors = 0.0;
+
+    vel_sq_temp = new double;
+    num_neighbors_temp = new double;
 }
 
 double* Community::get_pos(){ return pos ; }
@@ -136,10 +139,10 @@ void Community::sense_velocities(double* vel_sensed){
 double Community::sense_velocities_and_velsq(double* vel_sensed)
 {
     double sum_of_vel_sq = 0;
-    double* vel_sq = new double;
-    *vel_sq = 0;
-    av_num_neighbors = 0.0;
-    double* num_neighbors = new double;
+    *vel_sq_temp = 0.;
+    *num_neighbors_temp = 0.;
+    av_num_neighbors = 0.;
+
     /*
     * If using grid, this fills the grid from scratch
     * at every iteration.
@@ -152,10 +155,10 @@ double Community::sense_velocities_and_velsq(double* vel_sensed)
         for (int i = 0; i<num_agents; i++)
         {
             neis = grid->get_neighborhood(agents + i, &num_neis);
-            agents[i].sense_velocity(num_neis, neis, vel_sensed + i*DIM, vel_sq,
-                                     num_neighbors,agentSepInfo);
-            sum_of_vel_sq += *vel_sq;
-            av_num_neighbors += *num_neighbors;
+            agents[i].sense_velocity(num_neis, neis, vel_sensed + i*DIM, vel_sq_temp,
+                                     num_neighbors_temp, agentSepInfo);
+            sum_of_vel_sq += *vel_sq_temp;
+            av_num_neighbors += *num_neighbors_temp;
         }
         av_num_neighbors /= num_agents;
     }
@@ -163,10 +166,10 @@ double Community::sense_velocities_and_velsq(double* vel_sensed)
     {
         for (int i = 0; i < num_agents; i++)
         {
-            agents[i].sense_velocity(num_agents, agents, vel_sensed + i*DIM, vel_sq,
-                                     num_neighbors, agentSepInfo + i * 4 * num_agents);
-            sum_of_vel_sq += *vel_sq;
-            av_num_neighbors += *num_neighbors;
+            agents[i].sense_velocity(num_agents, agents, vel_sensed + i*DIM, vel_sq_temp,
+                                     num_neighbors_temp, agentSepInfo + i * 4 * num_agents);
+            sum_of_vel_sq += *vel_sq_temp;
+            av_num_neighbors += *num_neighbors_temp;
         }
         av_num_neighbors /= num_agents;
     }
@@ -327,7 +330,8 @@ Agent** spp_community_alloc_neighbors(int num_agents){
     return new Agent*[num_agents] ;
     }
 
-Agent* spp_community_build_agents(int num_agents, double* pos, double* vel, double* velNorm, Agent** neis, Behavior* behavior){
+Agent* spp_community_build_agents(int num_agents, double* pos, double* vel, double* velNorm,
+                                  Agent** neis, Behavior* behavior){
     /* 
      * WARNING: all the agents share the same
      * *behavior* and the same *neis* pointer.
