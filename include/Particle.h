@@ -6,30 +6,31 @@
 class Particle {
  public:
 	Particle();
-	Particle( ci::Vec3f pos, ci::Vec3f vel );
-	void pullToCenter( const ci::Vec3f &center );
+	Particle( ci::vec3 pos, ci::vec3 vel );
+	void pullToCenter( const ci::vec3 &center );
 	void update( bool flatten );
 	void limitSpeed();
     void draw(float radScale = 1.0f);
 	void drawTail(float dim = 1.0f);
     inline void updatePos_spp(double x, double y, double z)
     {
-        mPos.set(x, y, z); 
+        mPos = ci::vec3(x, y, z); 
     };
     inline void updateVel_spp(double vx, double vy, double vz) 
     {
-        mVel.set(vx, vy, vz);
+        mVel = ci::vec3(vx, vy, vz);
     };
 	
-	ci::Vec3f	mPos;
-	ci::Vec3f	mTailPos;
-	ci::Vec3f	mVel;
-	ci::Vec3f	mVelNormal;
-	ci::Vec3f	mAcc;
+    ci::vec3	mPos;
+	ci::vec3	mTailPos;
+	ci::vec3	mVel;
+	ci::vec3	mVelNormal;
+	ci::vec3	mAcc;
 	
 	float		mDecay;
 	float		mRadius;
 	float		mLength;
+    ci::vec3    mCubeSize;
 	float		mMaxSpeed, mMaxSpeedSqrd;
 	float		mMinSpeed, mMinSpeedSqrd;
 

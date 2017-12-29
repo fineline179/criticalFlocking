@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
       <Configuration>Debug</Configuration>
@@ -32,18 +32,19 @@
     <ProjectGuid>{87A4E6E1-1331-424F-A0E7-6F91E3B591DA}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>criticalFlocking</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0.14393.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v120</PlatformToolset>
+    <PlatformToolset>v140</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v120</PlatformToolset>
+    <PlatformToolset>v140</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
@@ -70,14 +71,14 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\include;..\..\cinder_0.8.6\cinder_0.8.6_vc2013\include;..\..\cinder_0.8.6\cinder_0.8.6_vc2013\boost</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\include;..\..\cinder_0.9.2\include</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>..\..\cinder_0.8.6\cinder_0.8.6_vc2013\lib\msw\$(PlatformTarget);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>cinder-$(PlatformToolset)_d.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>..\..\cinder_0.9.2\lib\msw\x86\Debug\v140;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>cinder.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <IgnoreSpecificDefaultLibraries>LIBCMT</IgnoreSpecificDefaultLibraries>
       <RandomizedBaseAddress>false</RandomizedBaseAddress>
       <DataExecutionPrevention />
@@ -97,7 +98,7 @@
       </FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\include;..\..\cinder_0.8.6\cinder_0.8.6_vc2013\include;..\..\cinder_0.8.6\cinder_0.8.6_vc2013\boost</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\include;..\..\cinder_0.9.2\include</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <FloatingPointModel>Precise</FloatingPointModel>
@@ -110,8 +111,8 @@
       <EnableCOMDATFolding>
       </EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalLibraryDirectories>..\..\cinder_0.8.6\cinder_0.8.6_vc2013\lib\msw\$(PlatformTarget);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>cinder-$(PlatformToolset).lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>..\..\cinder_0.9.2\lib\msw\x86\Release\v140;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>cinder.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <GenerateMapFile>true</GenerateMapFile>
       <DataExecutionPrevention />
       <LinkTimeCodeGeneration>PGInstrument</LinkTimeCodeGeneration>

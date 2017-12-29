@@ -1,8 +1,10 @@
-#include "cinder/app/AppBasic.h"
+#include "cinder/app/App.h"
+#include "cinder/app/RendererGl.h"
 #include "cinder/Vector.h"
 #include "cinder/Utilities.h"
 #include "cinder/params/Params.h"
 #include "cinder/Camera.h"
+#include "cinder/gl/gl.h"
 #include "ParticleController.h"
 #include "swarming_spp/community.h"
 #include "cinder/Rand.h"
@@ -12,9 +14,8 @@
 using namespace ci;
 using namespace ci::app;
 
-class FlockingApp : public AppBasic {
+class FlockingApp : public App {
  public:
-	void prepareSettings( Settings *settings );
 	void keyDown( KeyEvent event );
 	void setup();
 	void update();
@@ -35,8 +36,8 @@ class FlockingApp : public AppBasic {
 	
 	// CAMERA
 	CameraPersp			mCam;
-	Quatf				mSceneRotation;
-	Vec3f				mEye, mCenter, mUp;
+	quat				mSceneRotation;
+	vec3				mEye, mCenter, mUp;
 	float				mCameraDistance;
 	
 	ParticleController	mParticleController;
@@ -100,14 +101,6 @@ class FlockingApp : public AppBasic {
 };
 
 
-void FlockingApp::prepareSettings( Settings *settings )
-{
-    //settings->setWindowSize(1280, 720);
-    settings->setWindowSize(1920, 1080);
-	settings->setFrameRate( 60.0f );
-}
-
-
 void FlockingApp::setup()
 {	
     // SETUP STATISTICAL VARIABLES
@@ -125,15 +118,15 @@ void FlockingApp::setup()
     mAvNumNeighbors = 0.0;
     mFlockPolarization = new double[3];
 
-    birdFrom        = -1.;
-    birdTo          = -1.;
+    birdFrom        = -1.0;
+    birdTo          = 2.;
     mPaused         = true;
     mShowGrid       = true;
     birdDimFactor   = 0.4f;
 
     // SETUP SIMULATION PARAMETERS
     mBoxSize = 500.;
-    mN = 1047;
+    mN = 300;
     //mJ = 10.0; mG = 0.08;
     mJ = 19.0; mG = 0.2;
     mDt = .03;
@@ -147,13 +140,13 @@ void FlockingApp::setup()
 
 	// SETUP CAMERA
     mCameraDistance = 20.0f;
-    mEye = Vec3f(0.0, 0.0, mCameraDistance);
-    mCenter = Vec3f(0.0, 0.0, 0.0);
-    mUp = Vec3f::yAxis();
+    mEye = vec3(0.0, 0.0, mCameraDistance);
+    mCenter = vec3(0.0, 0.0, 0.0);
+    mUp = vec3(0.0, 1.0, 0.0);
 	mCam.setPerspective( 75.0f, getWindowAspectRatio(), 5.0f, 2000.0f );
 
 	// SETUP UI PARAMS
-    mParams = params::InterfaceGl::create("Flocking", Vec2i(200, 400));
+    mParams = params::InterfaceGl::create("Flocking", ivec2(200, 400));
     mParams->addParam("Scene Rotation", &mSceneRotation, "opened=1");
     mParams->addSeparator();
     mParams->addParam("J", &mJ, "min=1.0 max=60.0 step=1.0 keyIncr=f keyDecr=d");
@@ -201,7 +194,7 @@ void FlockingApp::setup()
     
     // create Cinder particles
     for (int i = 0; i < mN; i++)
-        spp_particles.push_back(Particle(Vec3f(), Vec3f()));
+        spp_particles.push_back(Particle(vec3(), vec3()));
 }
 
 
@@ -221,10 +214,10 @@ void FlockingApp::update()
     mFlockPolarization_mag = com.polarization(mFlockPolarization);
 
     // UPDATE CAMERA
-    mCenter = Vec3f(mFlockCenter[0], mFlockCenter[1], mFlockCenter[2]);
-    Vec3f cam_offset = mSceneRotation * Vec3f(0, 0, mCameraDistance);
+    mCenter = vec3(mFlockCenter[0], mFlockCenter[1], mFlockCenter[2]);
+    vec3 cam_offset = mSceneRotation * vec3(0, 0, mCameraDistance);
     mEye = mCenter - cam_offset;
-    mUp = mSceneRotation * Vec3f(0, 1, 0);
+    mUp = mSceneRotation * vec3(0, 1, 0);
 
     mCam.lookAt(mEye, mCenter, mUp);
     gl::setMatrices( mCam );
@@ -257,7 +250,9 @@ void FlockingApp::update()
         {
             spp_particles[i].updatePos_spp(cp[3 * i], cp[3 * i + 1], cp[3 * i + 2]);
             spp_particles[i].updateVel_spp(cv[3 * i], cv[3 * i + 1], cv[3 * i + 2]);
-            spp_particles[i].mVelNormal = spp_particles[i].mVel.normalized();
+            //spp_particles[i].mVelNormal = spp_particles[i].mVel.normalized();
+            spp_particles[i].mVelNormal = normalize(spp_particles[i].mVel);
+
             spp_particles[i].mTailPos = spp_particles[i].mPos - 
                                         spp_particles[i].mVelNormal * spp_particles[i].mLength;
         }
@@ -274,8 +269,8 @@ void FlockingApp::draw()
         drawGrid(mBoxSize, 4.0f, 16.0f);
 	
     gl::color(ColorA(1.0f, 1.0f, 1.0f, 1.0f));
-    gl::drawStrokedCube(Vec3f(mBoxSize / 2, mBoxSize / 2, mBoxSize / 2), 
-                        Vec3f(mBoxSize, mBoxSize, mBoxSize));
+    gl::drawStrokedCube(vec3(mBoxSize / 2, mBoxSize / 2, mBoxSize / 2), 
+                        vec3(mBoxSize, mBoxSize, mBoxSize));
 
     //// Draw particles
     int birdFromInd = (int) (floorf(birdFrom + .0001));
@@ -284,16 +279,16 @@ void FlockingApp::draw()
     // no highlighting
     if (birdFromInd == -1)
     {
+        // TODO: this is erroneously drawing lines from origin IN ADDITION to the spheres..
         gl::color(ColorA(1.0f, 1.0f, 1.0f, 1.0f));
         for (int i = 0; i < mN; i++)
             spp_particles[i].draw();
         
-        glBegin(GL_LINES);
+        gl::begin(GL_LINES);
         for (int i = 0; i < mN; i++)
             spp_particles[i].drawTail();
-        glEnd();
+        gl::end();
     }
-
     // highlighting
     else
     {
@@ -306,12 +301,12 @@ void FlockingApp::draw()
             spp_particles[i].draw();
 
         // tails
-        glBegin(GL_LINES);
+        gl::begin(GL_LINES);
         for (int i = 0; i < birdFromInd; i++)
             spp_particles[i].drawTail(birdDimFactor);
         for (int i = birdFromInd + 1; i < mN; i++)
             spp_particles[i].drawTail(birdDimFactor);
-        glEnd();
+        gl::end();
 
         // draw from bird in standard color, slightly bigger
         gl::color(ColorA(1.0f, 1.0f, 1.0f, 1.0f));
@@ -320,20 +315,20 @@ void FlockingApp::draw()
         gl::color(ColorA(0.0f, 0.0f, 1.0f, 1.0f));
         spp_particles[birdToInd].draw(1.6);
         // draw from and to bird's tails
-        glBegin(GL_LINES);
+        gl::begin(GL_LINES);
         spp_particles[birdFromInd].drawTail();
         spp_particles[birdToInd].drawTail();
-        glEnd();
+        gl::end();
 
         // draw arrows from 'from' bird to all its neighbors
         drawBirdToNeighborsArrows(birdFromInd);
     }
 
     // Draw average velocity of flock
-    auto avPos = Vec3f(mFlockCenter[0], mFlockCenter[1], mFlockCenter[2]);
-    auto avVel = Vec3f((float) mFlockAvVel[0], (float) mFlockAvVel[1], (float) mFlockAvVel[2]);
+    auto avPos = vec3(mFlockCenter[0], mFlockCenter[1], mFlockCenter[2]);
+    auto avVel = vec3((float) mFlockAvVel[0], (float) mFlockAvVel[1], (float) mFlockAvVel[2]);
     gl::color(ColorA(0.0f, 1.0f, 0.0f, 1.0f));
-    gl::drawVector(avPos, avPos + avVel / 3, 0.3, .1);
+    gl::drawVector(avPos, avPos + avVel / 3.0f, 0.3f, .1f);
 
     // Draw pair velocity correlation as function of separation graph
     drawC_sp_Graph();
@@ -349,7 +344,7 @@ void FlockingApp::draw()
 
 void FlockingApp::drawGrid(float boxSize, float cellSpacing, float gridRadius)
 {
-    Vec3f begin, end;
+    vec3 begin, end;
     gl::color(ColorA(0.25f, 0.25f, 0.25f, 1.0f));
 
     float minX = int((mFlockCenter[0] - gridRadius) / cellSpacing) * cellSpacing;
@@ -363,7 +358,8 @@ void FlockingApp::drawGrid(float boxSize, float cellSpacing, float gridRadius)
     for (float i = minY; i <= maxY; i = i + cellSpacing)
         for (float j = minZ; j <= maxZ; j = j + cellSpacing)
         {
-            begin.set(minX, i, j); end.set(maxX, i, j);
+            //begin.set(minX, i, j); end.set(maxX, i, j);
+            begin = vec3(minX, i, j); end = vec3(maxX, i, j);
             gl::drawLine(begin, end);
         }
 
@@ -371,7 +367,8 @@ void FlockingApp::drawGrid(float boxSize, float cellSpacing, float gridRadius)
     for (float i = minX; i <= maxX; i = i + cellSpacing)
         for (float j = minZ; j <= maxZ; j = j + cellSpacing)
         {
-            begin.set(i, minY, j); end.set(i, maxY, j);
+            //begin.set(i, minY, j); end.set(i, maxY, j);
+            begin = vec3(i, minY, j); end = vec3(i, maxY, j);
             gl::drawLine(begin, end);
         }
 
@@ -379,7 +376,8 @@ void FlockingApp::drawGrid(float boxSize, float cellSpacing, float gridRadius)
     for (float i = minX; i <= maxX; i = i + cellSpacing)
         for (float j = minY; j <= maxY; j = j + cellSpacing)
         {
-            begin.set(i, j, minZ); end.set(i, j, maxZ);
+            //begin.set(i, j, minZ); end.set(i, j, maxZ);
+            begin = vec3(i, j, minZ); end = vec3(i, j, maxZ);
             gl::drawLine(begin, end);
         }
 }
@@ -403,11 +401,11 @@ void FlockingApp::drawC_sp_Graph()
     gl::disableDepthWrite();
     gl::setMatricesWindow(getWindowSize());
     gl::pushModelView();
-      gl::translate(Vec3f(10.0f, getWindowHeight() - 10.0f - 600.0 / 2, 0.0f));
+      gl::translate(vec3(10.0f, getWindowHeight() - 10.0f - 600.0 / 2, 0.0f));
       gl::color(ColorA(1.0f, 1.0f, 1.0f, 1.0f));
       // draw graph axes
-      gl::drawLine(Vec2f(0.0f, 0.0f), Vec2f(200.0f, 0.0f)); // x axis
-      gl::drawLine(Vec2f(0.0f, 100.0f), Vec2f(0.0f, -100.0f)); // y axis
+      gl::drawLine(vec2(0.0f, 0.0f), vec2(200.0f, 0.0f)); // x axis
+      gl::drawLine(vec2(0.0f, 100.0f), vec2(0.0f, -100.0f)); // y axis
       // draw graph bars
       gl::color(ColorA(0.25f, 0.25f, 1.0f, 1.0f));
       // width of graph will be 200 pixels
@@ -429,13 +427,13 @@ void FlockingApp::drawBirdToBirdArrow(int fromIndex, int toIndex)
         double* cp = com.get_pos();
         double* agSepInfo = com.get_AgentSepInfo();
 
-        auto fromPos = Vec3f(cp[3 * fromIndex], cp[3 * fromIndex + 1], cp[3 * fromIndex + 2]);
-        auto toDisplacement = Vec3f(agSepInfo[fromIndex * 4 * mN + toIndex * 4],
+        auto fromPos = vec3(cp[3 * fromIndex], cp[3 * fromIndex + 1], cp[3 * fromIndex + 2]);
+        auto toDisplacement = vec3(agSepInfo[fromIndex * 4 * mN + toIndex * 4],
                                     agSepInfo[fromIndex * 4 * mN + toIndex * 4 + 1],
                                     agSepInfo[fromIndex * 4 * mN + toIndex * 4 + 2]);
         gl::color(ColorA(0.0f, 1.0f, 1.0f, 1.0f));
-        gl::drawVector(fromPos, fromPos + toDisplacement / 2, 0.2, .06);
-        gl::drawLine(fromPos + toDisplacement / 2, fromPos + toDisplacement);
+        gl::drawVector(fromPos, fromPos + toDisplacement / 2.0f, 0.2f, .06f);
+        gl::drawLine(fromPos + toDisplacement / 2.0f, fromPos + toDisplacement);
     }
 }
 
@@ -454,16 +452,21 @@ void FlockingApp::drawBirdToNeighborsArrows(int fromIndex)
         {
             // neighbor index is address of neighbor - address of beginning of agent array
             int toIndex = neis[i] - ags;
-            auto fromPos = Vec3f(cp[3 * fromIndex], cp[3 * fromIndex + 1], cp[3 * fromIndex + 2]);
-            auto toDisplacement = Vec3f(agSepInfo[fromIndex * 4 * mN + toIndex * 4],
+            auto fromPos = vec3(cp[3 * fromIndex], cp[3 * fromIndex + 1], cp[3 * fromIndex + 2]);
+            auto toDisplacement = vec3(agSepInfo[fromIndex * 4 * mN + toIndex * 4],
                                         agSepInfo[fromIndex * 4 * mN + toIndex * 4 + 1],
                                         agSepInfo[fromIndex * 4 * mN + toIndex * 4 + 2]);
             gl::color(ColorA(0.0f, 1.0f, 1.0f, 1.0f));
-            gl::drawVector(fromPos, fromPos + toDisplacement / 2, 0.2, .06);
-            gl::drawLine(fromPos + toDisplacement / 2, fromPos + toDisplacement);
+            gl::drawVector(fromPos, fromPos + toDisplacement / 2.0f, 0.2f, .06f);
+            gl::drawLine(fromPos + toDisplacement / 2.0f, fromPos + toDisplacement);
         }
     }
 }
 
+void prepareSettings(App::Settings *settings)
+{
+    settings->setWindowSize(1920, 1080);
+    settings->setFrameRate(60.0f);
+}
 
-CINDER_APP_BASIC(FlockingApp, RendererGl)
+CINDER_APP(FlockingApp, RendererGl(), prepareSettings)

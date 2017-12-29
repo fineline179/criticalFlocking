@@ -69,16 +69,16 @@ void Community::randomize_directions(double v0){
 
     // Using cinder's random unit Vec3f instead
     int i, j;
-    ci::Vec3f unitVec;
+    ci::vec3 unitVec;
     for (i = 0; i < num_agents; i++)
     {
-        unitVec = ci::Rand::randVec3f();
+        unitVec = ci::Rand::randVec3();
         for (j = 0; j < DIM; j++)
         {// random velocity
             //vel[i*DIM + j] = v0 * unitVec[j];
             // constant velocity (positive z axis)
             //vel[i*DIM + j] = v0 * ci::Vec3f(1.0, 0.0, 0.0)[j] +   (v0 / 3)*unitVec[j];
-            vel[i*DIM + j] = v0 * ci::Vec3f(1.0, 0.0, 0.0)[j];
+            vel[i*DIM + j] = v0 * ci::vec3(1.0, 0.0, 0.0)[j];
         }
     }
 

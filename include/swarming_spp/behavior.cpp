@@ -106,7 +106,7 @@ void Bialek_fixedVel_consensus::sense_velocity(Agent* ag, int num_agents, Agent*
         neiAttract_force[i] *= beta;
 
     // calc noise term
-    auto unitNoise = ci::Rand::randVec3f();
+    auto unitNoise = ci::Rand::randVec3();
     for (i = 0; i < DIM; i++)
         noise_force[i] = (num_neis - 1) * noise * unitNoise[i];
 
