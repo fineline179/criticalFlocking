@@ -13,7 +13,8 @@
 /*----------------------- Community class --------------------------*/
 
 Community::Community(int nags , double L, Agent* ags , double* p, double* v, double* vN,
-                     double* agSepInfo){
+                     double* agSepInfo)
+{
     num_agents = nags ;
     agents = ags ;
     pos = p ;
@@ -29,19 +30,19 @@ Community::Community(int nags , double L, Agent* ags , double* p, double* v, dou
     num_neighbors_temp = new int;
 }
 
-double* Community::get_pos(){ return pos ; }
+double* Community::get_pos() { return pos; }
 
-double* Community::get_vel(){ return vel ; }
+double* Community::get_vel() { return vel; }
 
-Agent* Community::get_agents(){ return agents ;} 
+Agent* Community::get_agents() { return agents; }
 
-int Community::get_num_agents(){ return num_agents ; }
+int Community::get_num_agents() { return num_agents; }
 
-double Community::get_av_num_neighbors() { return av_num_neighbors ; }
+double Community::get_av_num_neighbors() { return av_num_neighbors; }
 
 double* Community::get_AgentSepInfo() { return agentSepInfo; }
 
-double Community::get_box_size(){ return box_size ;} 
+double Community::get_box_size() { return box_size; }
 
 // Initialization
 
@@ -52,7 +53,8 @@ void Community::randomize_positions(float width)
 
 }
 
-void Community::randomize_directions(double v0){
+void Community::randomize_directions(double v0)
+{
     /*
      * Fill the vel list with random
      * velocities of norm v0.
@@ -77,7 +79,6 @@ void Community::randomize_directions(double v0){
         {// random velocity
             //vel[i*DIM + j] = v0 * unitVec[j];
             // constant velocity (positive z axis)
-            //vel[i*DIM + j] = v0 * ci::Vec3f(1.0, 0.0, 0.0)[j] +   (v0 / 3)*unitVec[j];
             vel[i*DIM + j] = v0 * ci::vec3(1.0, 0.0, 0.0)[j];
         }
     }
@@ -85,8 +86,8 @@ void Community::randomize_directions(double v0){
 }
 
 // Kinematic
-
-void Community::move(double dt){
+void Community::move(double dt)
+{
     for(int i=0; i<num_agents*DIM; i++)
         pos[i] += dt * vel[i] ;
 }
@@ -116,22 +117,24 @@ void Community::updateAgentSepInfo()
 
 // Consensus protocol
 
-void Community::sense_velocities(double* vel_sensed){
-    /* 
-     * If using grid, this fills the grid from scratch
-     * at every iteration.
-     */
+void Community::sense_velocities(double* vel_sensed)
+{
     int num_neis ;
     Agent* neis ;
-    if(use_grid){
-        fill_grid() ;
-        for(int i=0; i<num_agents; i++){
-            neis = grid->get_neighborhood(agents+i , &num_neis ) ; 
-            agents[i].sense_velocity(num_neis , neis , vel_sensed + i*DIM) ;
-        }
-    }else{
+    // If using grid, this fills the grid from scratch at every iteration.
+    if(use_grid)
+    {
+        fill_grid();
         for(int i=0; i<num_agents; i++)
-            agents[i].sense_velocity(num_agents , agents , vel_sensed + i*DIM) ;
+        {
+            neis = grid->get_neighborhood(agents + i, &num_neis);
+            agents[i].sense_velocity(num_neis, neis, vel_sensed + i*DIM);
+        }
+    }
+    else //no grid
+    {
+        for(int i=0; i<num_agents; i++)
+            agents[i].sense_velocity(num_agents, agents, vel_sensed + i*DIM);
     }
 }
 
@@ -142,12 +145,9 @@ double Community::sense_velocities_and_velsq(double* vel_sensed, bool updateNeig
     *num_neighbors_temp = 0.;
     av_num_neighbors = 0.;
 
-    /*
-    * If using grid, this fills the grid from scratch
-    * at every iteration.
-    */
     int num_neis;
     Agent* neis;
+    // If using grid, this fills the grid from scratch at every iteration.
     if (use_grid)
     {
         fill_grid();
@@ -161,7 +161,7 @@ double Community::sense_velocities_and_velsq(double* vel_sensed, bool updateNeig
         }
         av_num_neighbors /= num_agents;
     }
-    else
+    else // no grid
     {
         for (int i = 0; i < num_agents; i++)
         {
@@ -194,30 +194,36 @@ void Community::update_velocities(double* vel_sensed)
 
 // Statistical properties
 
-void Community::mean_position(double* meanpos){
-    int i, ia ;
-    for(i=0; i<DIM; i++){
+void Community::mean_position(double* meanpos)
+{
+    int i, ia;
+    for(i=0; i<DIM; i++)
+    {
         meanpos[i] = 0.0 ;
-        for(ia=0; ia<num_agents; ia++){
-            meanpos[i] += pos[ia*DIM + i] ;
+        for(ia=0; ia<num_agents; ia++)
+        {
+            meanpos[i] += pos[ia*DIM + i];
         }
-        meanpos[i] /= num_agents ;
+        meanpos[i] /= num_agents;
     }
 }
 
-double Community::mean_velocity(double* meanvel){
-    int i, ia ;
-    double speed2 = 0. ;
+double Community::mean_velocity(double* meanvel)
+{
+    int i, ia;
+    double speed2 = 0.;
 
     for (i = 0; i<DIM; i++)
         meanvel[i] = 0.0 ;
-    for(ia=0; ia<num_agents; ia++){
+    for(ia=0; ia<num_agents; ia++)
+    {
         for(i=0; i<DIM; i++)
-            meanvel[i] += vel[ia*DIM + i ] ;
+            meanvel[i] += vel[ia*DIM + i];
     }
-    for(i=0; i<DIM; i++){
+    for(i=0; i<DIM; i++)
+    {
         meanvel[i] /= num_agents ;
-        speed2 += meanvel[i] * meanvel[i] ;
+        speed2 += meanvel[i] * meanvel[i];
     }
     return sqrt(speed2);
 }
@@ -228,7 +234,8 @@ double Community::polarization(double* polar)
     double polarizationMag = 0.;
     for (i = 0; i < DIM; i++)
         polar[i] = 0.0;
-    for (ia = 0; ia < num_agents; ia++){
+    for (ia = 0; ia < num_agents; ia++)
+    {
         for (i = 0; i < DIM; i++)
             polar[i] += velNorm[ia*DIM + i];
     }
@@ -242,9 +249,9 @@ double Community::polarization(double* polar)
 
 double Community::order_parameter(double v0)
 {
-    double meanvel[DIM] ;
-    double mv2 = this->mean_velocity(meanvel) ;
-    return sqrt(mv2)/v0 ;
+    double meanvel[DIM];
+    double mv2 = this->mean_velocity(meanvel);
+    return sqrt(mv2) / v0;
 }
 
 
@@ -260,14 +267,16 @@ void Community::correlation_histo(double maxRadius, int n_bins, double v0,
     double dist, meanSpeed, speed1, speed2;
     double bindist = n_bins / maxRadius;
 
-    for (i = 0; i < n_bins; i++){
+    for (i = 0; i < n_bins; i++)
+    {
         totalcorr[i] = 0.; 
         count[i] = 0;
     }
 
-    meanSpeed = this->mean_velocity(mv) ;
+    meanSpeed = this->mean_velocity(mv);
     
-    for(ia=0; ia<num_agents; ia++){
+    for(ia=0; ia<num_agents; ia++)
+    {
         v1 = agents[ia].get_vel();
         speed1 = sqrt(v1[0] * v1[0] + v1[1] * v1[1] + v1[2] * v1[2]);
         for(ja=ia+1; ja<num_agents; ja++){
@@ -276,7 +285,8 @@ void Community::correlation_histo(double maxRadius, int n_bins, double v0,
             dist = sqrt( agents[ia].distance2( agents[ja].get_pos() ) ) ;
             bin = int(dist * bindist);
             // NB: don't write outside of memory bounds when an agent gets outside our max range
-            if (bin < n_bins){
+            if (bin < n_bins)
+            {
                 count[bin] += 1;
                 // note we are using the CURRENT measured mean speed of the flock in mv,
                 //  rather than the set mean speed parameter
@@ -285,11 +295,13 @@ void Community::correlation_histo(double maxRadius, int n_bins, double v0,
         }
     }
 
-    for (i = 0; i < n_bins; i++){
+    for (i = 0; i < n_bins; i++)
+    {
         if (count[i] != 0)
             totalcorr[i] /= count[i];
     }
 }
+
 
 // Other
 double Community::max_distance(){
@@ -342,17 +354,18 @@ Agent* spp_community_build_agents(int num_agents, double* pos, double* vel, doub
     return ags ;
 }
 
-Community spp_community_autostart(int num_agents, double speed, double box_size, Behavior* behavior){
-    double* pos     = spp_community_alloc_space(num_agents) ;
+Community spp_community_autostart(int num_agents, double speed, double box_size, Behavior* behavior)
+{
+    double* pos     = spp_community_alloc_space(num_agents);
     double* vel     = spp_community_alloc_space(num_agents);
     double* velNorm = spp_community_alloc_space(num_agents);
     double* agentSepInfos = new double[num_agents * num_agents * (DIM + 1)];
     std::fill(agentSepInfos, agentSepInfos + num_agents * num_agents * (DIM + 1), 0.0);
-    Agent* ags      = spp_community_build_agents(num_agents, pos, vel, velNorm, /*neis,*/ behavior) ;
+    Agent* ags      = spp_community_build_agents(num_agents, pos, vel, velNorm, /*neis,*/ behavior);
     Community com = Community(num_agents, box_size, ags, pos, vel, velNorm, agentSepInfos);
 
     /* Starting positions and velocities */
-    com.randomize_positions(15.0) ;
-    com.randomize_directions(speed) ;
-    return com ;
+    com.randomize_positions(15.0);
+    com.randomize_directions(speed);
+    return com;
 }

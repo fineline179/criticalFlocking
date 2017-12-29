@@ -122,13 +122,10 @@ void Bialek_fixedVel_consensus::sense_velocity(Agent* ag, int num_agents, Agent*
 
 void Bialek_fixedVel_consensus::rotate(double* v)
 {
-
 }
 
 
-/*
-* Bialek (full) Consensus - 1307.5563
-*/
+// Bialek (full) Consensus - 1307.5563
 Bialek_consensus::Bialek_consensus(Interaction* ii, double vzero, double gamma, 
                                    double deltat, double j, double g, double temp,
                                    double alph, double r_a, double r_b, double r_e, double r_0,

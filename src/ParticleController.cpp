@@ -13,23 +13,20 @@ ParticleController::ParticleController()
 
 void ParticleController::applyForceToParticles( float zoneRadiusSqrd )
 {
-	for( list<Particle>::iterator p1 = mParticles.begin(); p1 != mParticles.end(); ++p1 ){
-	
+	for( list<Particle>::iterator p1 = mParticles.begin(); p1 != mParticles.end(); ++p1 )
+    {
 		list<Particle>::iterator p2 = p1;
-		for( ++p2; p2 != mParticles.end(); ++p2 ) {
+		for( ++p2; p2 != mParticles.end(); ++p2 ) 
+        {
 			vec3 dir = p1->mPos - p2->mPos;
-			//float distSqrd = dir.lengthSquared();
             float distSqrd = length2(dir);
 
-
-					
-			if( distSqrd <= zoneRadiusSqrd ){	// SEPARATION
+            // SEPARATION
+            if( distSqrd <= zoneRadiusSqrd )
+            {	
 				float F = ( zoneRadiusSqrd/distSqrd - 1.0f ) * 0.01f;
-				//dir.normalize();
                 normalize(dir);
-
 				dir *= F;
-			
 				p1->mAcc += dir;
 				p2->mAcc -= dir;
 			}
@@ -55,12 +52,14 @@ void ParticleController::update( bool flatten )
 void ParticleController::draw()
 {
     gl::color(ColorA(1.0f, 1.0f, 1.0f, 1.0f));
-	for( list<Particle>::iterator p = mParticles.begin(); p != mParticles.end(); ++p ){
+	for( list<Particle>::iterator p = mParticles.begin(); p != mParticles.end(); ++p )
+    {
 		p->draw();
 	}
 	
     gl::begin(GL_LINES);
-	for( list<Particle>::iterator p = mParticles.begin(); p != mParticles.end(); ++p ){
+	for( list<Particle>::iterator p = mParticles.begin(); p != mParticles.end(); ++p )
+    {
 		p->drawTail();
 	}
 	gl::end();

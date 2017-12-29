@@ -125,7 +125,7 @@ void Agent::look_around(int n_agents, Agent* ags){
 }
 
 void Agent::sense_velocity(int num_agents, Agent* ags, double* new_vel){
-    beh->sense_velocity(this, num_agents, ags, new_vel) ; 
+    beh->sense_velocity(this, num_agents, ags, new_vel);
 }
 
 void Agent::sense_velocity(int num_agents, Agent* ags, double* new_vel, double* neis_vel_sq){

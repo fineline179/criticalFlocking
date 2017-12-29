@@ -114,7 +114,7 @@ int Topologic::get_neighbors(Agent* a0, int n_agents, Agent* ags, Agent** neis){
     int ia;
     int n_neis = 0;
     double* pos = a0->get_pos();
-    /* determine the effective radius */
+    // determine the effective radius
     for (ia = 0; ia < n_agents; ia++)
         dists2[ia] = g->distance2( pos , (ags+ia)->get_pos()) ;
     rad2 = quickselect(dists2, n_agents, k ) ;
@@ -131,7 +131,7 @@ int Topologic::get_neighbors(Agent* a0, int n_agents, Agent* ags, Agent** neis){
 void Topologic::look_around(Agent* a0, int n_agents, Agent* ags){
     int ia;
     double* pos = a0->get_pos() ;
-    /* determine the effective radius */
+    // determine the effective radius
     for(ia=0; ia < n_agents ; ia++)
         dists2[ia] = g->distance2( pos , (ags+ia)->get_pos()) ;
     rad2 = quickselect(dists2, n_agents, k ) ;

@@ -36,7 +36,6 @@ void Particle::pullToCenter( const vec3 &center )
 	float maxDistance = 300.0f;
 	
 	if( distToCenter > maxDistance ){
-        //dirToCenter.normalize();
         dirToCenter = normalize(dirToCenter);
 		float pullStrength = 0.0001f;
 		mVel -= dirToCenter * ( ( distToCenter - maxDistance ) * pullStrength );
@@ -47,7 +46,6 @@ void Particle::update( bool flatten )
 {	
 	if( flatten ) mAcc.z = 0.0f;
 	mVel += mAcc;
-    //mVelNormal = mVel.normalized();
     mVelNormal = normalize(mVel);
 	limitSpeed();
 	
@@ -62,7 +60,6 @@ void Particle::update( bool flatten )
 
 void Particle::limitSpeed()
 {
-	//float vLengthSqrd = mVel.lengthSquared();
     float vLengthSqrd = length2(mVel);
 
 	if( vLengthSqrd > mMaxSpeedSqrd ){
