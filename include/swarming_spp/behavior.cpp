@@ -110,7 +110,7 @@ void Bialek_fixedVel_consensus::sense_velocity(Agent* ag, int num_agents, Agent*
     for (i = 0; i < DIM; i++)
         noise_force[i] = (num_neis - 1) * noise * unitNoise[i];
 
-    // sum of all three terms
+    // sum of all three force terms
     for (i = 0; i < DIM; i++)
     {
         new_vel[i] = neiMatch_vel[i] + neiAttract_force[i] + noise_force[i];
@@ -177,6 +177,7 @@ void Bialek_consensus::sense_velocity(Agent* ag, int num_agents, Agent* ags,
     // 1) calc sum of velocity differences between agent and all neighbors
     // NB: agent is included in its neighbor list, but the term for which the neighbor is the agent
     //     itself contributes zero to the sum.
+
     // cache source agent velocity
     double* ag_vel = ag->get_vel();
 
@@ -267,68 +268,3 @@ void Bialek_consensus::sense_velocity(Agent* ag, int num_agents, Agent* ags,
     }
 
 }
-//
-///*
-// * Vicsek Prey
-// */
-//Vicsek_prey::Vicsek_prey(Interaction* ii, double vzero, double ns, double dradius): Vicsek_consensus(ii, vzero, ns) {
-//    detection_radius2 = dradius * dradius ;
-//}
-//k
-//
-//int Vicsek_prey::sense_danger(Agent* ag, int num_threats, Agent* threats, double* new_vel) {
-//    int it , i;
-//    double disp[DIM] ;
-//    double dist2 ;
-//    for(it=0 ; it<num_threats ; it++){
-//        dist2 = inter->g->distance2(threats[it].get_pos() , ag->get_pos() ) ;
-//        if(dist2 < detection_radius2){
-//            inter->g->displacement(threats[it].get_pos() , ag->get_pos(), disp) ;
-//            for(i=0 ; i<DIM ; i++)
-//                new_vel[i] = disp[i] * v0 / sqrt(dist2) ;
-//            return 1 ;
-//        }
-//    }
-//    return 0 ;
-//}
-//
-///*
-// * Vicsek Predator
-// */
-//int Vicsek_predator::sense_victims(Agent* pred, int num_agents, Agent* ags){
-//    int ia , imin;
-//    double tmp, mindist ;
-//    imin = 0 ;
-//    mindist = inter->g->distance2( pred->get_pos(), ags[0].get_pos() ) ;
-//    for(ia=1; ia<num_agents; ia++){
-//        tmp = inter->g->distance2( pred->get_pos(), ags[ia].get_pos() ) ;
-//        if(tmp < mindist){
-//            mindist = tmp ;
-//            imin = ia ;
-//        }
-//    }
-//    return imin ;
-//}
-//
-//int Vicsek_predator::hunt(Agent* pred, Agent* prey, double dt){
-//    double disp[DIM] ;
-//    double dist2 ;
-//    int i ;
-//    double* pos = pred->get_pos() ;
-//    double* vel = pred->get_vel() ;
-//
-//    inter->g->displacement( pos, prey->get_pos() , disp ) ;
-//    dist2 = inter->g->length2(disp) ;
-//    for(i=0; i<DIM; i++)
-//        vel[i] = disp[i] * v0 / sqrt(dist2) ;
-//
-//    if(dist2 < v0 * v0 * dt * dt ){
-//        /* deep copy position, dont copy the pointer! */
-//        for(i=0; i<DIM; i++)
-//            pos[i] = prey->get_pos()[i] ;
-//        return 1 ;
-//    }else{
-//        pred->move(dt) ;
-//        return 0 ;
-//    }
-//}

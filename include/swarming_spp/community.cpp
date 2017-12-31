@@ -25,7 +25,6 @@ Community::Community(int nags , double L, Agent* ags , double* p, double* v, dou
     use_grid = false ;
     grid = NULL ;
     av_num_neighbors = 0.0;
-
     vel_sq_temp = new double;
     num_neighbors_temp = new int;
 }
@@ -50,7 +49,6 @@ void Community::randomize_positions(float width)
 {
     for (int i = 0; i < DIM*num_agents; i++)
         pos[i] = (spp_frandom() - 0.5f) * width + box_size / 2;
-
 }
 
 void Community::randomize_directions(double v0)
@@ -61,24 +59,19 @@ void Community::randomize_directions(double v0)
      * Uses spp_random_vector from agent.cpp
      * (imported through grid.h -> agent.h)
      */
-    //int i, j ;
-    //double v2 ;
-    //for(i=0; i<num_agents; i++){
-    //    v2 = spp_random_vector(vel + i*DIM);
-    //    for (j = 0; j < DIM; j++)
-    //        vel[i*DIM + j] *= v0 / sqrt(v2);
-    //}
 
-    // Using cinder's random unit Vec3f instead
+    // Using cinder's random unit vec3
     int i, j;
     ci::vec3 unitVec;
     for (i = 0; i < num_agents; i++)
     {
         unitVec = ci::Rand::randVec3();
         for (j = 0; j < DIM; j++)
-        {// random velocity
+        {
+            // random velocity
             //vel[i*DIM + j] = v0 * unitVec[j];
-            // constant velocity (positive z axis)
+
+            // MOD: constant velocity (positive z axis)
             vel[i*DIM + j] = v0 * ci::vec3(1.0, 0.0, 0.0)[j];
         }
     }
@@ -99,14 +92,17 @@ void Community::updateAgentSepInfo()
 
     for (int i = 0; i < num_agents - 1; i++){
         for (int j = i + 1; j < num_agents; j++){
+
             // make sure to accumulate sep squared on 0
             agentSepInfo[i * 4 * num_agents + j * 4 + 3] = 0.0;
             agentSepInfo[j * 4 * num_agents + i * 4 + 3] = 0.0;
             for (int k = 0; k < 3; k++){
                 temp = pos[DIM*j + k] - pos[DIM*i + k];
                 agentSepInfo[i * 4 * num_agents + j * 4 + k] = temp;
+
                 // symmetric entry in matrix
                 agentSepInfo[j * 4 * num_agents + i * 4 + k] = -temp;
+
                 // ij separation squared
                 agentSepInfo[i * 4 * num_agents + j * 4 + 3] += temp*temp;
                 agentSepInfo[j * 4 * num_agents + i * 4 + 3] += temp*temp;
@@ -131,7 +127,7 @@ void Community::sense_velocities(double* vel_sensed)
             agents[i].sense_velocity(num_neis, neis, vel_sensed + i*DIM);
         }
     }
-    else //no grid
+    else // no grid
     {
         for(int i=0; i<num_agents; i++)
             agents[i].sense_velocity(num_agents, agents, vel_sensed + i*DIM);
@@ -168,6 +164,7 @@ double Community::sense_velocities_and_velsq(double* vel_sensed, bool updateNeig
             agents[i].sense_velocity(num_agents, agents, vel_sensed + i*DIM, vel_sq_temp,
                                      num_neighbors_temp, agentSepInfo + i * 4 * num_agents,
                                      updateNeighbors);
+          
             sum_of_vel_sq += *vel_sq_temp;
             av_num_neighbors += *num_neighbors_temp;
         }
@@ -184,6 +181,7 @@ void Community::update_velocities(double* vel_sensed)
         double speed = sqrt(vel_sensed[i*DIM] * vel_sensed[i*DIM] +
                             vel_sensed[i*DIM + 1] * vel_sensed[i*DIM + 1] + 
                             vel_sensed[i*DIM + 2] * vel_sensed[i*DIM + 2]);
+       
         for (int j = 0; j < DIM; j++)
         {
             vel[i*DIM + j] = vel_sensed[i*DIM + j];

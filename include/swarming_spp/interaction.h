@@ -1,5 +1,5 @@
 #include <math.h>
-class Agent ;
+class Agent;
 
 /*
  * Abstract Geometry class used as a template

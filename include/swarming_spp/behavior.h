@@ -1,4 +1,4 @@
-class Agent ;
+class Agent;
 #include "interaction.h"
 
 /*
@@ -26,7 +26,8 @@ class Behavior {
     public:
         virtual void sense_velocity(Agent* ag, int num_agents, Agent* ags, double* new_vel) {};
         virtual void sense_velocity(Agent* ag, int num_agents, Agent* ags, double* new_vel, double* neis_vel_sq) {};
-        virtual void sense_velocity(Agent* ag, int num_agents, Agent* ags, double* new_vel, double* neis_vel_sq, int* num_neighbors, double* posPairs, bool updateNeighbors) {};
+        virtual void sense_velocity(Agent* ag, int num_agents, Agent* ags, double* new_vel, double* neis_vel_sq, 
+                                    int* num_neighbors, double* posPairs, bool updateNeighbors) {};
         
         /* pure virtual, must be implemented */
         virtual double getdt() = 0;
@@ -73,7 +74,7 @@ public:
     double getAlpha() { return alpha; };
     double getBeta()  { return beta; };
     double getNoise() { return noise; };
-    double getdt() { return dt; };
+    double getdt()    { return dt; };
 
     void setAlphaBeta(double alph, double bet) { alpha = alph; beta = bet; };
     void setNoise(double nois) { noise = nois; };
@@ -129,75 +130,3 @@ protected:
     double ra_minus_rb;
     double distAttractScale;
 };
-
-/*
- * Vicsek consensus protocol plus
- * a prey behavior where the agents
- * sense danger and if detected act
- * on it, ignoring the consensus
- * protocol.
- * A threat is detected if any of
- * the *num_threats* agents in *threats*
- * is at a distance2 less than 
- * *dectection_radius2*. If detected,
- * the agent proceds to align itself
- * in order to radially flee from
- * the first threat detected.
- *
- */
-//
-//class Vicsek_prey : public Vicsek_consensus {
-//    public:
-//        Vicsek_prey(Interaction* ii, double v0, double noise, double dradius) ;
-//        /* If a threat is detected, return 1 and store the flee velocity 
-//         * in *new_vel*. Else, do nothing and return 0.
-//         */
-//        int sense_danger(Agent* ag, int num_threats, Agent* threats, double* new_vel) ;
-//    protected:
-//        /* Square of the maximum distance at which
-//         * agents are capable of detecting threats.
-//         *
-//         * TODO For the sake of generality,
-//         * this should be replaced by an
-//         * Interaction instance that determines
-//         * if the agent detects the threat or not.
-//         */
-//
-//        double detection_radius2 ;
-//} ;
-//
-///*
-// * Vicsek consensus protocol plus a predator
-// * behavior where the agent senses victims
-// * and hunts an agent if it close enough.
-// *
-// *      hunt: if *prey* is closer than *v0*x*deltat*
-// *          to the predator *ag*, then *ag*
-// *          moves to *prey* position and the
-// *          function returns 1. Otherwise,
-// *          move *ag* for *v0*x*deltat* in
-// *          *prey* direction and return 0.
-// *          Note the actual "hunting" is left
-// *          for the user or the HostileEnvironment
-// *          class to do.
-// *
-// */
-//class Vicsek_predator : public Vicsek_consensus {
-//    public:
-//        Vicsek_predator(Interaction* ii, double v0, double noise) : Vicsek_consensus(ii, v0, noise) {} ;
-//        /* Find which agent out of the *num_agents*
-//         * stored in *ags* is closer to the
-//         * predator *pred*.
-//         * Return the index of that agent.
-//         */
-//        int sense_victims(Agent* pred, int num_agents, Agent* ags) ;
-//        /* If *pred* can move to *prey*'s position
-//         * in a time *deltat* or less, then *pred*
-//         * moves to where *prey* is and return 1.
-//         * Else, move *pred* in the direction
-//         * of *prey* and return 0.
-//         * Return 1 if the succesfully hunted
-//         * and 0 otherwise.
-//         */
-//        int hunt(Agent* pred, Agent* prey, double deltat) ;
-//} ;

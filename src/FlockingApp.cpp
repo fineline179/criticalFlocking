@@ -54,7 +54,7 @@ class FlockingApp : public App {
 
     // Size of bounding box of simulation (note: possibly not currently used)
     double mBoxSize;
-    // Number of agents
+    // Number of agents (birds)
     int mN;
     // Time step for iteration of Langevin stochastic diff eq
     double mDt;
@@ -122,7 +122,6 @@ void FlockingApp::setup()
     // SETUP SIMULATION PARAMETERS
     mBoxSize = 500.;
     mN = 300;
-    //mJ = 10.0; mG = 0.08;
     mJ = 19.0; mG = 0.2;
     mDt = .03;
     mV0 = 12.57;
@@ -171,7 +170,6 @@ void FlockingApp::setup()
     v2    = spp_community_alloc_space(mN);
 
     g = new Cartesian(mBoxSize);
-    //interaction = new Topologic((int) m_nc, g, dist2);
     interaction = new TopoBalanced((int) m_nc, mBalanceAngle, g, dist2);                       
     behavior = new Bialek_consensus(interaction, mV0, 1.0,
                                     mDt, mJ, mG, mTemp,

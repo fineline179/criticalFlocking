@@ -169,8 +169,10 @@ int TopoBalanced::get_neighbors(Agent* a0, int a0_num, int n_agents, Agent* ags,
     list<agAndPos>::iterator it1, it2;
     for (it1 = nei_pairs.begin(); it1 != nei_pairs.end();){
         for (it2 = next(it1); it2 != nei_pairs.end();){
-            pairDotProb = get<1>(*it1)[0]*get<1>(*it2)[0] + get<1>(*it1)[1]*get<1>(*it2)[1] + get<1>(*it1)[2]*get<1>(*it2)[2];
-
+            pairDotProb = get<1>(*it1)[0] * get<1>(*it2)[0] +
+                          get<1>(*it1)[1] * get<1>(*it2)[1] +
+                          get<1>(*it1)[2] * get<1>(*it2)[2];
+            
             // if neighbors opening angle >= 90 degrees, both are fine
             if (pairDotProb <= 0.){
                 it2++;

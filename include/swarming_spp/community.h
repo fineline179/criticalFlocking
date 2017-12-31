@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <vector>
 
-class Grid ;
+class Grid;
 
 class Community{
     public:

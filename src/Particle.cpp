@@ -9,7 +9,7 @@ Particle::Particle()
 {
 }
 
-Particle::Particle( vec3 pos, vec3 vel )
+Particle::Particle(vec3 pos, vec3 vel)
 {
 	mPos			= pos;
 	mTailPos		= pos;
@@ -29,44 +29,47 @@ Particle::Particle( vec3 pos, vec3 vel )
     mCubeSize       = vec3(0.07f, 0.07f, 0.07f);
 }
 
-void Particle::pullToCenter( const vec3 &center )
+void Particle::pullToCenter(const vec3 &center)
 {
 	vec3 dirToCenter = mPos - center;
-	float distToCenter = dirToCenter.length();
+    float distToCenter = dirToCenter.length();
 	float maxDistance = 300.0f;
 	
-	if( distToCenter > maxDistance ){
+    if (distToCenter > maxDistance)
+    {
         dirToCenter = normalize(dirToCenter);
 		float pullStrength = 0.0001f;
-		mVel -= dirToCenter * ( ( distToCenter - maxDistance ) * pullStrength );
+        mVel -= dirToCenter * ((distToCenter - maxDistance) * pullStrength);
 	}
 }	
 
-void Particle::update( bool flatten )
+void Particle::update(bool flatten)
 {	
-	if( flatten ) mAcc.z = 0.0f;
-	mVel += mAcc;
+    if (flatten) mAcc.z = 0.0f;
+    mVel += mAcc;
     mVelNormal = normalize(mVel);
-	limitSpeed();
+    limitSpeed();
 	
-	mPos += mVel;
+    mPos += mVel;
     mTailPos = mPos - mVelNormal * mLength;
 	
-	if( flatten ) mPos.z = 0.0f;
+    if (flatten) mPos.z = 0.0f;
 		
-	mVel *= mDecay;
-	mAcc = vec3(0.0, 0.0, 0.0);
+    mVel *= mDecay;
+    mAcc = vec3(0.0, 0.0, 0.0);
 }
 
 void Particle::limitSpeed()
 {
     float vLengthSqrd = length2(mVel);
 
-	if( vLengthSqrd > mMaxSpeedSqrd ){
-		mVel = mVelNormal * mMaxSpeed;
-		
-	} else if( vLengthSqrd < mMinSpeedSqrd ){
-		mVel = mVelNormal * mMinSpeed;
+    if (vLengthSqrd > mMaxSpeedSqrd)
+    {
+        mVel = mVelNormal * mMaxSpeed;
+    }
+    else if (vLengthSqrd < mMinSpeedSqrd)
+    {
+        mVel = mVelNormal * mMinSpeed;
 	}
 }
 
@@ -83,7 +86,7 @@ void Particle::draw(float radScale)
 void Particle::drawTail(float dim)
 {
     gl::color(ColorA(dim, dim, dim, 1.0f));
-	gl::vertex( mPos );
+    gl::vertex(mPos);
     gl::color(ColorA(dim, 0.0f, 0.0f, 1.0f));
-	gl::vertex( mTailPos );
+    gl::vertex(mTailPos);
 }
