@@ -11,7 +11,7 @@ public:
     void pullToCenter(const ci::vec3 &center);
     void update(bool flatten);
     void limitSpeed();
-    void draw(const ci::gl::BatchRef &cubeBatch, float radScale = 1.0f);
+    void draw(const ci::gl::BatchRef &sphereBatch, float radScale = 1.0f);
     void drawTail(float dim = 1.0f);
     inline void updatePos_spp(double x, double y, double z)
     {
@@ -31,7 +31,6 @@ public:
     float		mDecay;
     float		mRadius;
     float		mLength;
-    ci::vec3    mCubeSize;
     float		mMaxSpeed, mMaxSpeedSqrd;
     float		mMinSpeed, mMinSpeedSqrd;
 

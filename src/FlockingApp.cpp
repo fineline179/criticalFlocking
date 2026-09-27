@@ -27,6 +27,7 @@ class FlockingApp : public App {
     void drawParamsWindow();
     void drawGrid(float boxSize, float cellSpacing, float gridRadius);
     void drawC_sp_Graph();
+    void drawArrowHead(const vec3 &end, const vec3 &dir, float headLength, float headRadius);
     void drawBirdToBirdArrow(int fromIndex, int toIndex);
     void drawBirdToNeighborsArrows(int fromIndex);
 
@@ -45,7 +46,8 @@ class FlockingApp : public App {
 	ivec2				mLastMousePos;
 	
 	ParticleController	mParticleController;
-	gl::BatchRef		mCubeBatch;
+	gl::BatchRef		mSphereBatch;
+	gl::BatchRef		mConeBatch;
 	float				mZoneRadius;
 	bool				mCentralGravity;
 	bool				mFlatten;
@@ -173,7 +175,11 @@ void FlockingApp::setup()
     //com.setup_grid(grid);
     
     // create Cinder particles
-    mCubeBatch = gl::Batch::create(geom::Cube(), gl::getStockShader(gl::ShaderDef().color()));
+    mSphereBatch = gl::Batch::create(geom::Sphere().subdivisions(8), gl::getStockShader(gl::ShaderDef().color()));
+    // unit cone along +y with its base at the origin, for arrowheads
+    mConeBatch = gl::Batch::create(geom::Cone().base(1.0f).apex(0.0f).height(1.0f)
+                                       .origin(vec3(0)).direction(vec3(0, 1, 0)),
+                                   gl::getStockShader(gl::ShaderDef().color()));
     for (int i = 0; i < mN; i++)
         spp_particles.push_back(Particle(vec3(), vec3()));
 }
@@ -373,7 +379,7 @@ void FlockingApp::draw()
     {
         gl::color(ColorA(1.0f, 1.0f, 1.0f, 1.0f));
         for (int i = 0; i < mN; i++)
-            spp_particles[i].draw(mCubeBatch);
+            spp_particles[i].draw(mSphereBatch);
         
         gl::begin(GL_LINES);
         for (int i = 0; i < mN; i++)
@@ -387,9 +393,9 @@ void FlockingApp::draw()
         // particles
         gl::color(ColorA(birdDimFactor, birdDimFactor, birdDimFactor, 1.0f));
         for (int i = 0; i < birdFromInd; i++)
-            spp_particles[i].draw(mCubeBatch);
+            spp_particles[i].draw(mSphereBatch);
         for (int i = birdFromInd + 1; i < mN; i++)
-            spp_particles[i].draw(mCubeBatch);
+            spp_particles[i].draw(mSphereBatch);
 
         // tails
         gl::begin(GL_LINES);
@@ -401,11 +407,11 @@ void FlockingApp::draw()
 
         // draw from bird in standard color, slightly bigger
         gl::color(ColorA(1.0f, 1.0f, 1.0f, 1.0f));
-        spp_particles[birdFromInd].draw(mCubeBatch, 1.6);
+        spp_particles[birdFromInd].draw(mSphereBatch, 1.6);
       
         // draw to bird in blue, slightly bigger
         gl::color(ColorA(0.0f, 0.0f, 1.0f, 1.0f));
-        spp_particles[birdToInd].draw(mCubeBatch, 1.6);
+        spp_particles[birdToInd].draw(mSphereBatch, 1.6);
         
         // draw from and to bird's tails
         gl::begin(GL_LINES);
@@ -494,19 +500,36 @@ void FlockingApp::drawC_sp_Graph()
       gl::translate(vec3(10.0f, getWindowHeight() - 10.0f - 600.0 / 2, 0.0f));
       gl::color(ColorA(1.0f, 1.0f, 1.0f, 1.0f));
       // draw graph axes
-      gl::drawLine(vec2(0.0f, 0.0f), vec2(200.0f, 0.0f)); // x axis
-      gl::drawLine(vec2(0.0f, 100.0f), vec2(0.0f, -100.0f)); // y axis
+      gl::begin(GL_LINES);
+      gl::vertex(vec2(0.0f, 0.0f)); gl::vertex(vec2(200.0f, 0.0f)); // x axis
+      gl::vertex(vec2(0.0f, 100.0f)); gl::vertex(vec2(0.0f, -100.0f)); // y axis
+      gl::end();
       // draw graph bars
       gl::color(ColorA(0.25f, 0.25f, 1.0f, 1.0f));
       // width of graph will be 200 pixels
-      // draw graph bars
+      // draw graph bars, two triangles each, in a single batch (one gl::drawSolidRect()
+      // per bar is slow on macOS)
+      gl::begin(GL_TRIANGLES);
       for (int i = 1; i <= mNumRadialBins; i++)
       {
-          gl::drawSolidRect(
-              Rectf(i*binW - barW / 2, 0.,
-                    i*binW + barW / 2, -(100 * mC_sp_r[i - 1] / scale)));
+          Rectf bar(i*binW - barW / 2, 0.,
+                    i*binW + barW / 2, -(100 * mC_sp_r[i - 1] / scale));
+          gl::vertex(bar.getUpperLeft()); gl::vertex(bar.getUpperRight()); gl::vertex(bar.getLowerRight());
+          gl::vertex(bar.getUpperLeft()); gl::vertex(bar.getLowerRight()); gl::vertex(bar.getLowerLeft());
       }
+      gl::end();
     gl::popModelView();
+}
+
+// Same arrowhead that gl::drawVector() draws for an arrow ending at 'end' along 'dir', but from
+// a cached batch, which avoids drawVector's per-call vertex upload (slow on macOS).
+void FlockingApp::drawArrowHead(const vec3 &end, const vec3 &dir, float headLength, float headRadius)
+{
+    gl::ScopedModelMatrix scpModel;
+    gl::translate(end - normalize(dir) * headLength);
+    gl::rotate(glm::rotation(vec3(0, 1, 0), normalize(dir)));
+    gl::scale(vec3(headRadius, headLength, headRadius));
+    mConeBatch->draw();
 }
 
 void FlockingApp::drawBirdToBirdArrow(int fromIndex, int toIndex)
@@ -521,8 +544,8 @@ void FlockingApp::drawBirdToBirdArrow(int fromIndex, int toIndex)
                                    agSepInfo[fromIndex * 4 * mN + toIndex * 4 + 1],
                                    agSepInfo[fromIndex * 4 * mN + toIndex * 4 + 2]);
         gl::color(ColorA(0.0f, 1.0f, 1.0f, 1.0f));
-        gl::drawVector(fromPos, fromPos + toDisplacement / 2.0f, 0.2f, .06f);
-        gl::drawLine(fromPos + toDisplacement / 2.0f, fromPos + toDisplacement);
+        gl::drawLine(fromPos, fromPos + toDisplacement);
+        drawArrowHead(fromPos + toDisplacement / 2.0f, toDisplacement, 0.2f, .06f);
     }
 }
 
@@ -537,18 +560,27 @@ void FlockingApp::drawBirdToNeighborsArrows(int fromIndex)
         Agent** neis = ags[fromIndex].get_neighbor_list();
         int num_neis = ags[fromIndex].get_num_neighs();
 
+        auto fromPos = vec3(cp[3 * fromIndex], cp[3 * fromIndex + 1], cp[3 * fromIndex + 2]);
+        std::vector<vec3> toDisplacements;
         for (int i = 0; i < num_neis; i++)
         {
             // neighbor index is address of neighbor - address of beginning of agent array
             int toIndex = neis[i] - ags;
-            auto fromPos = vec3(cp[3 * fromIndex], cp[3 * fromIndex + 1], cp[3 * fromIndex + 2]);
-            auto toDisplacement = vec3(agSepInfo[fromIndex * 4 * mN + toIndex * 4],
-                                       agSepInfo[fromIndex * 4 * mN + toIndex * 4 + 1],
-                                       agSepInfo[fromIndex * 4 * mN + toIndex * 4 + 2]);
-            gl::color(ColorA(0.0f, 1.0f, 1.0f, 1.0f));
-            gl::drawVector(fromPos, fromPos + toDisplacement / 2.0f, 0.2f, .06f);
-            gl::drawLine(fromPos + toDisplacement / 2.0f, fromPos + toDisplacement);
+            toDisplacements.push_back(vec3(agSepInfo[fromIndex * 4 * mN + toIndex * 4],
+                                           agSepInfo[fromIndex * 4 * mN + toIndex * 4 + 1],
+                                           agSepInfo[fromIndex * 4 * mN + toIndex * 4 + 2]));
         }
+
+        // a line to each neighbor with an arrowhead halfway along it; all lines in one batch
+        gl::color(ColorA(0.0f, 1.0f, 1.0f, 1.0f));
+        gl::begin(GL_LINES);
+        for (const vec3 &toDisplacement : toDisplacements)
+        {
+            gl::vertex(fromPos); gl::vertex(fromPos + toDisplacement);
+        }
+        gl::end();
+        for (const vec3 &toDisplacement : toDisplacements)
+            drawArrowHead(fromPos + toDisplacement / 2.0f, toDisplacement, 0.2f, .06f);
     }
 }
 

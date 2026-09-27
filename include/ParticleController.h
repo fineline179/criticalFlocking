@@ -13,5 +13,5 @@ public:
     void addParticles(int amt);
 
     std::list<Particle>	mParticles;
-    ci::gl::BatchRef	mCubeBatch;
+    ci::gl::BatchRef	mSphereBatch;
 };

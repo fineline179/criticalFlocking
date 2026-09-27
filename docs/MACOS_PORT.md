@@ -63,13 +63,20 @@ time went into Cinder's immediate-mode draw helpers (`gl::drawCube`, `gl::drawLi
 and on Apple's Metal-backed OpenGL that forces a CPU/GPU sync on every call. With 300 birds plus ~730
 grid lines per frame, that capped the frame rate.
 
-- Birds are drawn with a cached unit-cube `gl::Batch` plus a model matrix (`Particle::draw` now takes
-  the batch; `FlockingApp::mCubeBatch`). This is visually identical to `gl::drawCube(mPos, mCubeSize)`.
+- Birds are drawn with a cached unit-sphere `gl::Batch` plus a model matrix (`Particle::draw` now takes
+  the batch; `FlockingApp::mSphereBatch`). This is equivalent to `gl::drawSphere(mPos, radScale * mRadius, 8)`.
+  See "Bird highlighting" below; the first version of the port used a cube batch here.
   `ParticleController` (unused by the app) was updated to match.
 - The grid is drawn as a single `gl::begin(GL_LINES)` … `gl::end()` batch instead of one `gl::drawLine`
   per segment.
-- The remaining per-call helpers (bounding cube, flock velocity arrow, neighbor arrows, the C_sp(r)
-  bar graph) are only a few dozen calls and were left as-is. If more drawing is added, batch it.
+- The C_sp(r) bar graph is drawn as one `GL_TRIANGLES` batch, and its axes as one `GL_LINES` batch,
+  instead of per-bar `gl::drawSolidRect` and per-axis `gl::drawLine` calls.
+- The neighbor arrows of a highlighted bird are drawn as one `GL_LINES` batch, with arrowheads from a
+  cached unit-cone batch (`FlockingApp::drawArrowHead`, same geometry as `gl::drawVector`'s head).
+  With these still per-call, turning on highlighting dropped the frame rate to 30 fps.
+- Only the bounding cube and the flock-velocity arrow still use per-call helpers (3 calls per frame).
+  If more drawing is added, batch it; the cost per call grows with how much the GPU has queued, so a few
+  extra calls can push a frame over budget.
 
 ### Retina (high-density) display
 
@@ -87,12 +94,16 @@ rendered at half size in the lower-left corner with mismatched mouse coordinates
 - `M_PI` definitions in `swarming_spp/behavior.cpp` and `community.cpp` are guarded with `#ifndef M_PI`,
   since macOS's `<math.h>` already defines it.
 
+### Bird highlighting (fixed after the initial port)
+
+In the original code, birds were drawn as cubes because `gl::drawSphere` drew stray lines from the
+origin in Cinder 0.9.2 (the old TODO in `Particle::draw`). Cubes ignored `radScale`, so the highlighted
+"from" (white) and "to" (blue) birds weren't drawn at their intended 1.6× size. Birds are now spheres of
+radius `radScale * mRadius` (0.05, so slightly larger than the old 0.07-wide cubes). The highlighted birds
+are therefore 1.6× bigger, and the stray-lines problem doesn't occur with the batch approach.
+
 ## Known issues left alone (pre-existing)
 
-- Birds are still drawn as cubes. The old TODO about `gl::drawSphere` drawing stray lines in Cinder 0.9.2
-  was not revisited. Because of this, `Particle::draw`'s `radScale` is ignored, so the highlighted
-  "from"/"to" birds are not drawn bigger than the rest (the code intends 1.6×). Switching to a
-  `geom::Sphere` batch scaled by `radScale * mRadius` would restore the original intent.
 - `Particle::pullToCenter` uses `dirToCenter.length()`, which for a glm vector returns the component
   count (3), not the magnitude. It should be `glm::length(dirToCenter)`. The app never calls it.
 - `gl::rotate(mSceneRotation)` at the top of `FlockingApp::update()` has no effect, because the
@@ -104,6 +115,9 @@ The terminal session didn't have macOS Screen Recording permission, so `screenca
 Instead, a throwaway copy of the app (not committed) hooked the window's post-draw signal. It saved
 frames with `copyWindowSurface()`, injected synthetic input through `getWindow()->emitMouseDown/Drag/Wheel`
 and `emitKeyDown` (so ImGui gets first claim on events, as with real input), logged state, and quit.
+(Screen Recording later turned out to work from iTerm2. Capturing just the app window, even when it is
+covered, works with `screencapture -o -l <CGWindowID>`, where the window ID comes from
+`CGWindowListCopyWindowInfo` using the app's entry with nonzero bounds.)
 That confirmed:
 
 - The flock renders centered on its center of mass, at 60 fps, in both the paused and running states.

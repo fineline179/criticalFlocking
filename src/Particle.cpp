@@ -26,7 +26,6 @@ Particle::Particle(vec3 pos, vec3 vel)
     mRadius         = 0.05f;/*2.0f;*/
 	mLength			= 0.25f /*10.0f*/;
 
-    mCubeSize       = vec3(0.07f, 0.07f, 0.07f);
 }
 
 void Particle::pullToCenter(const vec3 &center)
@@ -73,20 +72,16 @@ void Particle::limitSpeed()
 	}
 }
 
-void Particle::draw(const gl::BatchRef &cubeBatch, float radScale)
+void Particle::draw(const gl::BatchRef &sphereBatch, float radScale)
 {
-    // TODO: CINDER 0.9.2 bug:
-    // drawSphere is drawing lines from the origin to each sphere in addition to the sphere
-    // TEMP FIX: using drawCube instead
-	//gl::drawSphere( mPos, radScale*mRadius, 8 );
-
-    // cubeBatch is a unit cube. Drawing it with a model matrix is equivalent to
-    // gl::drawCube(mPos, mCubeSize), but avoids drawCube's per-call vertex upload, which
-    // stalls the GPU on macOS and dropped the frame rate to ~6 fps with a few hundred birds.
+    // sphereBatch is a unit sphere. Drawing it with a model matrix is equivalent to
+    // gl::drawSphere(mPos, radScale * mRadius, 8), but avoids drawSphere's per-call vertex
+    // upload, which stalls the GPU on macOS and dropped the frame rate to ~6 fps with a few
+    // hundred birds.
     gl::ScopedModelMatrix scpModel;
     gl::translate(mPos);
-    gl::scale(mCubeSize);
-    cubeBatch->draw();
+    gl::scale(vec3(radScale * mRadius));
+    sphereBatch->draw();
 }
 
 void Particle::drawTail(float dim)
