@@ -11,6 +11,8 @@ Based on [Swarming SPP](https://github.com/david-mateo/swarming-spp), which has 
 
 The project was originally built with Visual Studio on Windows against Cinder 0.9.2. See
 [docs/MACOS_PORT.md](docs/MACOS_PORT.md) for what changed in the port to macOS / Cinder 0.9.3 and why.
+[docs/CRITICALITY_AND_DYNAMICS.md](docs/CRITICALITY_AND_DYNAMICS.md) compares what the paper
+establishes with what the simulation needs in order to show "all as one" predator response.
 
 Requires the Xcode command line tools (`xcode-select --install`) and CMake (`brew install cmake`).
 

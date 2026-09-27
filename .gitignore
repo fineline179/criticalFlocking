@@ -196,3 +196,7 @@ ModelManifest.xml
 .DS_Store
 build/
 imgui.ini
+
+# AI-generated literature notes: kept locally, deliberately not committed (unreviewed)
+docs/research/
+.*.swp
