@@ -4,7 +4,9 @@
 #include <random>
 
 #define DIM 3
+#ifndef M_PI
 #define M_PI 3.14159265358979
+#endif
  
 /*
 * Bialek fixed velocity Consensus - 1107.0604

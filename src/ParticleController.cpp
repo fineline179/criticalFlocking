@@ -52,10 +52,13 @@ void ParticleController::update(bool flatten)
 
 void ParticleController::draw()
 {
+    if (!mCubeBatch)
+        mCubeBatch = gl::Batch::create(geom::Cube(), gl::getStockShader(gl::ShaderDef().color()));
+
     gl::color(ColorA(1.0f, 1.0f, 1.0f, 1.0f));
     for (list<Particle>::iterator p = mParticles.begin(); p != mParticles.end(); ++p)
     {
-        p->draw();
+        p->draw(mCubeBatch);
     }
 
     gl::begin(GL_LINES);

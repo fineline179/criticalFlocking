@@ -73,14 +73,20 @@ void Particle::limitSpeed()
 	}
 }
 
-void Particle::draw(float radScale)
+void Particle::draw(const gl::BatchRef &cubeBatch, float radScale)
 {
     // TODO: CINDER 0.9.2 bug:
     // drawSphere is drawing lines from the origin to each sphere in addition to the sphere
     // TEMP FIX: using drawCube instead
 	//gl::drawSphere( mPos, radScale*mRadius, 8 );
-    gl::drawCube(mPos, mCubeSize);
 
+    // cubeBatch is a unit cube. Drawing it with a model matrix is equivalent to
+    // gl::drawCube(mPos, mCubeSize), but avoids drawCube's per-call vertex upload, which
+    // stalls the GPU on macOS and dropped the frame rate to ~6 fps with a few hundred birds.
+    gl::ScopedModelMatrix scpModel;
+    gl::translate(mPos);
+    gl::scale(mCubeSize);
+    cubeBatch->draw();
 }
 
 void Particle::drawTail(float dim)

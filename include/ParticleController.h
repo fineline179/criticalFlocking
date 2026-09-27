@@ -1,5 +1,6 @@
 #pragma once
 #include "Particle.h"
+#include "cinder/gl/Batch.h"
 #include <list>
 
 class ParticleController {
@@ -12,4 +13,5 @@ public:
     void addParticles(int amt);
 
     std::list<Particle>	mParticles;
+    ci::gl::BatchRef	mCubeBatch;
 };

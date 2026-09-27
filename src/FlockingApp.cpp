@@ -2,7 +2,7 @@
 #include "cinder/app/RendererGl.h"
 #include "cinder/Vector.h"
 #include "cinder/Utilities.h"
-#include "cinder/params/Params.h"
+#include "cinder/CinderImGui.h"
 #include "cinder/Camera.h"
 #include "cinder/gl/gl.h"
 #include "ParticleController.h"
@@ -17,9 +17,14 @@ using namespace ci::app;
 class FlockingApp : public App {
  public:
 	void keyDown( KeyEvent event );
+	void mouseDown( MouseEvent event );
+	void mouseDrag( MouseEvent event );
+	void mouseWheel( MouseEvent event );
+	void resize();
 	void setup();
 	void update();
 	void draw();
+    void drawParamsWindow();
     void drawGrid(float boxSize, float cellSpacing, float gridRadius);
     void drawC_sp_Graph();
     void drawBirdToBirdArrow(int fromIndex, int toIndex);
@@ -27,20 +32,20 @@ class FlockingApp : public App {
 
     bool     mPaused;
     bool     mShowGrid;
-    float    birdFrom;
-    float    birdTo;
+    // which birds to highlight (0-indexed). If birdFrom is -1, no highlighting.
+    int      birdFrom;
+    int      birdTo;
     float    birdDimFactor;
 
-	// PARAMS
-	params::InterfaceGlRef	mParams;
-	
 	// CAMERA
 	CameraPersp			mCam;
 	quat				mSceneRotation;
 	vec3				mEye, mCenter, mUp;
 	float				mCameraDistance;
+	ivec2				mLastMousePos;
 	
 	ParticleController	mParticleController;
+	gl::BatchRef		mCubeBatch;
 	float				mZoneRadius;
 	bool				mCentralGravity;
 	bool				mFlatten;
@@ -112,9 +117,10 @@ void FlockingApp::setup()
     mFlockAvVel = new double[3];
     mAvNumNeighbors = 0.0;
     mFlockPolarization = new double[3];
+    mQ_int = 0.0;
 
-    birdFrom        = -1.0;
-    birdTo          = 2.;
+    birdFrom        = -1;
+    birdTo          = 2;
     mPaused         = true;
     mShowGrid       = true;
     birdDimFactor   = 0.4f;
@@ -139,31 +145,12 @@ void FlockingApp::setup()
     mUp =     vec3(0.0, 1.0, 0.0);
 	mCam.setPerspective( 75.0f, getWindowAspectRatio(), 5.0f, 2000.0f );
 
-	// SETUP UI PARAMS
-    mParams = params::InterfaceGl::create("Flocking", ivec2(200, 400));
-    mParams->addParam("Scene Rotation", &mSceneRotation, "opened=1");
-    mParams->addSeparator();
-    mParams->addParam("J", &mJ, "min=1.0 max=60.0 step=1.0 keyIncr=f keyDecr=d");
-    mParams->addParam("g",  &mG,  "min=0.01 max=0.5 step=0.01 keyIncr=v keyDecr=c");
-    mParams->addParam("Temp", &mTemp, "min=0.025 max=2.0 step=0.025 keyIncr=y keyDecr=t");
-    mParams->addParam("Balance Angle", &mBalanceAngle, 
-                      "min=5.0 max=180.0 step=1.0 keyIncr=o keyDecr=i");
-    mParams->addSeparator();
-    mParams->addParam("Eye Distance", &mCameraDistance,
-                      "min=5.0 max=1500.0 step=1.0 keyIncr=s keyDecr=w" );
-    // which bird to highlight (1-indexed). If 0, no highlighting.
-    // TODO: unhardcode max and replace with NUM_INITIAL_PARTICLES
-    mParams->addParam("Bird From", &birdFrom,
-                      "min=-1.0 max=9.0 step=1.0 keyIncr=. keyDecr=,");
-    mParams->addParam("Bird To", &birdTo,
-                      "min=0.0 max=9.0 step=1.0 keyIncr=l keyDecr=k");
-    mParams->addParam("Paused", &mPaused, "keyIncr=space");
-    mParams->addParam("Draw grid", &mShowGrid, "keyIncr=g");
-    mParams->addSeparator();
-    mParams->addParam("Mean speed", &mFlockAvSpeed, true);
-    mParams->addParam("Av Num Neighs", &mAvNumNeighbors, true);
-    mParams->addParam("Polarization", &mFlockPolarization_mag, true);
-    mParams->addParam("Q_int", &mQ_int, true);
+	// SETUP UI (Dear ImGui; the params window itself is built each frame in drawParamsWindow())
+    ImGui::Initialize();
+    // ImGui works in framebuffer pixels, so scale it up on high-density (Retina) displays
+    float uiScale = getWindowContentScale();
+    ImGui::GetStyle().ScaleAllSizes(uiScale);
+    ImGui::GetStyle().FontScaleDpi = uiScale;
 
     // CREATE SWARMING_SPP containers
     dist2 = spp_community_alloc_space(mN);
@@ -186,6 +173,7 @@ void FlockingApp::setup()
     //com.setup_grid(grid);
     
     // create Cinder particles
+    mCubeBatch = gl::Batch::create(geom::Cube(), gl::getStockShader(gl::ShaderDef().color()));
     for (int i = 0; i < mN; i++)
         spp_particles.push_back(Particle(vec3(), vec3()));
 }
@@ -193,11 +181,124 @@ void FlockingApp::setup()
 
 void FlockingApp::keyDown( KeyEvent event )
 {
+    // keyboard shortcuts (formerly the AntTweakBar keyIncr/keyDecr bindings)
+    if (event.getCode() == KeyEvent::KEY_SPACE)
+    {
+        mPaused = !mPaused;
+        return;
+    }
+
+    switch (event.getChar())
+    {
+        case 'f': mJ = glm::clamp(mJ + 1.0, 1.0, 60.0); break;
+        case 'd': mJ = glm::clamp(mJ - 1.0, 1.0, 60.0); break;
+        case 'v': mG = glm::clamp(mG + 0.01, 0.01, 0.5); break;
+        case 'c': mG = glm::clamp(mG - 0.01, 0.01, 0.5); break;
+        case 'y': mTemp = glm::clamp(mTemp + 0.025, 0.025, 2.0); break;
+        case 't': mTemp = glm::clamp(mTemp - 0.025, 0.025, 2.0); break;
+        case 'o': mBalanceAngle = glm::clamp(mBalanceAngle + 1.0, 5.0, 180.0); break;
+        case 'i': mBalanceAngle = glm::clamp(mBalanceAngle - 1.0, 5.0, 180.0); break;
+        case 's': mCameraDistance = glm::clamp(mCameraDistance + 1.0f, 5.0f, 1500.0f); break;
+        case 'w': mCameraDistance = glm::clamp(mCameraDistance - 1.0f, 5.0f, 1500.0f); break;
+        case '.': birdFrom = glm::clamp(birdFrom + 1, -1, mN - 1); break;
+        case ',': birdFrom = glm::clamp(birdFrom - 1, -1, mN - 1); break;
+        case 'l': birdTo = glm::clamp(birdTo + 1, 0, mN - 1); break;
+        case 'k': birdTo = glm::clamp(birdTo - 1, 0, mN - 1); break;
+        case 'g': mShowGrid = !mShowGrid; break;
+        case 'r': mSceneRotation = quat(); break;
+    }
+}
+
+// Left-drag orbits the camera around the flock center (replaces the AntTweakBar
+// "Scene Rotation" widget). Events over the ImGui window are consumed by ImGui.
+void FlockingApp::mouseDown( MouseEvent event )
+{
+    mLastMousePos = event.getPos();
+}
+
+void FlockingApp::mouseDrag( MouseEvent event )
+{
+    ivec2 delta = event.getPos() - mLastMousePos;
+    mLastMousePos = event.getPos();
+
+    const float radiansPerPixel = 0.005f;
+    mSceneRotation = normalize(mSceneRotation *
+                               angleAxis(-delta.x * radiansPerPixel, vec3(0, 1, 0)) *
+                               angleAxis( delta.y * radiansPerPixel, vec3(1, 0, 0)));
+}
+
+void FlockingApp::mouseWheel( MouseEvent event )
+{
+    mCameraDistance = glm::clamp(mCameraDistance * powf(0.9f, event.getWheelIncrement()),
+                                 5.0f, 1500.0f);
+}
+
+void FlockingApp::resize()
+{
+    mCam.setAspectRatio(getWindowAspectRatio());
+}
+
+void FlockingApp::drawParamsWindow()
+{
+    auto sliderDouble = [](const char* label, double* value, double min, double max,
+                           const char* format)
+    {
+        ImGui::SliderScalar(label, ImGuiDataType_Double, value, &min, &max, format,
+                            ImGuiSliderFlags_AlwaysClamp);
+    };
+
+    float uiScale = getWindowContentScale();
+    ImGui::SetNextWindowPos(ImVec2(10 * uiScale, 10 * uiScale), ImGuiCond_FirstUseEver);
+    ImGui::Begin("Flocking", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
+
+    if (ImGui::Button("Reset view"))
+        mSceneRotation = quat();
+    ImGui::SameLine();
+    ImGui::TextDisabled("drag: rotate, wheel: zoom");
+    ImGui::Separator();
+
+    sliderDouble("J", &mJ, 1.0, 60.0, "%.1f");
+    sliderDouble("g", &mG, 0.01, 0.5, "%.2f");
+    sliderDouble("Temp", &mTemp, 0.025, 2.0, "%.3f");
+    sliderDouble("Balance Angle", &mBalanceAngle, 5.0, 180.0, "%.1f");
+    ImGui::Separator();
+
+    ImGui::SliderFloat("Eye Distance", &mCameraDistance, 5.0f, 1500.0f, "%.1f",
+                       ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_AlwaysClamp);
+    ImGui::SliderInt("Bird From", &birdFrom, -1, mN - 1, "%d", ImGuiSliderFlags_AlwaysClamp);
+    ImGui::SliderInt("Bird To", &birdTo, 0, mN - 1, "%d", ImGuiSliderFlags_AlwaysClamp);
+    ImGui::Checkbox("Paused", &mPaused);
+    ImGui::Checkbox("Draw grid", &mShowGrid);
+    ImGui::Separator();
+
+    ImGui::Text("Mean speed:     %.4f", mFlockAvSpeed);
+    ImGui::Text("Av Num Neighs:  %.4f", mAvNumNeighbors);
+    ImGui::Text("Polarization:   %.4f", mFlockPolarization_mag);
+    ImGui::Text("Q_int:          %.4f", mQ_int);
+
+    if (ImGui::CollapsingHeader("Keyboard shortcuts"))
+    {
+        ImGui::TextUnformatted(
+            "space  pause / run\n"
+            "f / d  J +/-\n"
+            "v / c  g +/-\n"
+            "y / t  Temp +/-\n"
+            "o / i  Balance Angle +/-\n"
+            "s / w  Eye Distance +/-\n"
+            ". / ,  Bird From +/-\n"
+            "l / k  Bird To +/-\n"
+            "g      toggle grid\n"
+            "r      reset view");
+    }
+
+    ImGui::End();
 }
 
 
 void FlockingApp::update()
 {
+    drawParamsWindow();
+
     gl::rotate( mSceneRotation );
 
     com.mean_position(mFlockCenter);
@@ -264,15 +365,15 @@ void FlockingApp::draw()
                         vec3(mBoxSize, mBoxSize, mBoxSize));
 
     //// Draw particles
-    int birdFromInd = (int) (floorf(birdFrom + .0001));
-    int birdToInd = (int) (floorf(birdTo + .0001));
+    int birdFromInd = birdFrom;
+    int birdToInd = birdTo;
 
     // no highlighting
     if (birdFromInd == -1)
     {
         gl::color(ColorA(1.0f, 1.0f, 1.0f, 1.0f));
         for (int i = 0; i < mN; i++)
-            spp_particles[i].draw();
+            spp_particles[i].draw(mCubeBatch);
         
         gl::begin(GL_LINES);
         for (int i = 0; i < mN; i++)
@@ -286,9 +387,9 @@ void FlockingApp::draw()
         // particles
         gl::color(ColorA(birdDimFactor, birdDimFactor, birdDimFactor, 1.0f));
         for (int i = 0; i < birdFromInd; i++)
-            spp_particles[i].draw();
+            spp_particles[i].draw(mCubeBatch);
         for (int i = birdFromInd + 1; i < mN; i++)
-            spp_particles[i].draw();
+            spp_particles[i].draw(mCubeBatch);
 
         // tails
         gl::begin(GL_LINES);
@@ -300,11 +401,11 @@ void FlockingApp::draw()
 
         // draw from bird in standard color, slightly bigger
         gl::color(ColorA(1.0f, 1.0f, 1.0f, 1.0f));
-        spp_particles[birdFromInd].draw(1.6);
+        spp_particles[birdFromInd].draw(mCubeBatch, 1.6);
       
         // draw to bird in blue, slightly bigger
         gl::color(ColorA(0.0f, 0.0f, 1.0f, 1.0f));
-        spp_particles[birdToInd].draw(1.6);
+        spp_particles[birdToInd].draw(mCubeBatch, 1.6);
         
         // draw from and to bird's tails
         gl::begin(GL_LINES);
@@ -324,9 +425,8 @@ void FlockingApp::draw()
 
     // Draw pair velocity correlation as function of separation graph
     drawC_sp_Graph();
-	
-	// Draw Params window
-	mParams->draw();
+
+	// (the ImGui params window is rendered automatically after draw())
 }
 
 
@@ -336,7 +436,6 @@ void FlockingApp::draw()
 
 void FlockingApp::drawGrid(float boxSize, float cellSpacing, float gridRadius)
 {
-    vec3 begin, end;
     gl::color(ColorA(0.25f, 0.25f, 0.25f, 1.0f));
 
     float minX = int((mFlockCenter[0] - gridRadius) / cellSpacing) * cellSpacing;
@@ -346,29 +445,31 @@ void FlockingApp::drawGrid(float boxSize, float cellSpacing, float gridRadius)
     float minZ = int((mFlockCenter[2] - gridRadius) / cellSpacing) * cellSpacing;
     float maxZ = (int((mFlockCenter[2] + gridRadius) / cellSpacing) + 1) * cellSpacing;
     
+    // all lines go in a single batch; one gl::drawLine() per segment is very slow on macOS
+    gl::begin(GL_LINES);
+
     // x lines
     for (float i = minY; i <= maxY; i = i + cellSpacing)
         for (float j = minZ; j <= maxZ; j = j + cellSpacing)
         {
-            begin = vec3(minX, i, j); end = vec3(maxX, i, j);
-            gl::drawLine(begin, end);
+            gl::vertex(vec3(minX, i, j)); gl::vertex(vec3(maxX, i, j));
         }
 
     // y lines
     for (float i = minX; i <= maxX; i = i + cellSpacing)
         for (float j = minZ; j <= maxZ; j = j + cellSpacing)
-        {            
-            begin = vec3(i, minY, j); end = vec3(i, maxY, j);
-            gl::drawLine(begin, end);
+        {
+            gl::vertex(vec3(i, minY, j)); gl::vertex(vec3(i, maxY, j));
         }
 
     //z lines
     for (float i = minX; i <= maxX; i = i + cellSpacing)
         for (float j = minY; j <= maxY; j = j + cellSpacing)
-        {            
-            begin = vec3(i, j, minZ); end = vec3(i, j, maxZ);
-            gl::drawLine(begin, end);
+        {
+            gl::vertex(vec3(i, j, minZ)); gl::vertex(vec3(i, j, maxZ));
         }
+
+    gl::end();
 }
 
 void FlockingApp::drawC_sp_Graph()
@@ -455,6 +556,10 @@ void prepareSettings(App::Settings *settings)
 {
     settings->setWindowSize(1920, 1080);
     settings->setFrameRate(60.0f);
+    // On current macOS the GL view gets a Retina-resolution drawable regardless, so opt in
+    // explicitly; otherwise Cinder reports a content scale of 1 and ImGui renders at the
+    // wrong scale.
+    settings->setHighDensityDisplayEnabled(true);
 }
 
 CINDER_APP(FlockingApp, RendererGl(), prepareSettings)

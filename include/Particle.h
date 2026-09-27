@@ -1,6 +1,7 @@
 #pragma once
 #include "cinder/Vector.h"
 #include "cinder/Color.h"
+#include "cinder/gl/Batch.h"
 #include <vector>
 
 class Particle {
@@ -10,7 +11,7 @@ public:
     void pullToCenter(const ci::vec3 &center);
     void update(bool flatten);
     void limitSpeed();
-    void draw(float radScale = 1.0f);
+    void draw(const ci::gl::BatchRef &cubeBatch, float radScale = 1.0f);
     void drawTail(float dim = 1.0f);
     inline void updatePos_spp(double x, double y, double z)
     {

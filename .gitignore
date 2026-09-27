@@ -190,3 +190,9 @@ ModelManifest.xml
 *.db
 *.opendb
 *.txt
+!CMakeLists.txt
+
+# macOS / CMake build
+.DS_Store
+build/
+imgui.ini

@@ -8,7 +8,9 @@
 // this is normally supplied in the command line when compiling the library.
 //  since I am just going from the source here, I've defined it manually
 #define DIM 3
+#ifndef M_PI
 #define M_PI 3.14159265358979
+#endif
 
 /*----------------------- Community class --------------------------*/
 
