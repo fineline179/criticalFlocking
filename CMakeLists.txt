@@ -18,16 +18,23 @@ endif()
 
 include( "${CINDER_PATH}/proj/cmake/modules/cinderMakeApp.cmake" )
 
+# Simulation core (no Cinder dependency), shared by the app and the headless tool
+add_library( flocksim STATIC
+	${CMAKE_CURRENT_SOURCE_DIR}/src/sim/Flock.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/src/sim/Measure.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/src/sim/Params.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/src/sim/Predator.cpp
+)
+target_include_directories( flocksim PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src )
+target_compile_features( flocksim PUBLIC cxx_std_17 )
+
 ci_make_app(
 	APP_NAME    criticalFlocking
 	CINDER_PATH ${CINDER_PATH}
 	SOURCES     ${CMAKE_CURRENT_SOURCE_DIR}/src/FlockingApp.cpp
-	            ${CMAKE_CURRENT_SOURCE_DIR}/src/Particle.cpp
-	            ${CMAKE_CURRENT_SOURCE_DIR}/src/ParticleController.cpp
-	            ${CMAKE_CURRENT_SOURCE_DIR}/include/swarming_spp/agent.cpp
-	            ${CMAKE_CURRENT_SOURCE_DIR}/include/swarming_spp/behavior.cpp
-	            ${CMAKE_CURRENT_SOURCE_DIR}/include/swarming_spp/community.cpp
-	            ${CMAKE_CURRENT_SOURCE_DIR}/include/swarming_spp/grid.cpp
-	            ${CMAKE_CURRENT_SOURCE_DIR}/include/swarming_spp/interaction.cpp
-	INCLUDES    ${CMAKE_CURRENT_SOURCE_DIR}/include
+	LIBRARIES   flocksim
 )
+
+# Headless driver for calibration and validation runs (see tools/flocksim_cli.cpp)
+add_executable( flocksim_cli ${CMAKE_CURRENT_SOURCE_DIR}/tools/flocksim_cli.cpp )
+target_link_libraries( flocksim_cli PRIVATE flocksim )

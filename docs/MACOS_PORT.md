@@ -6,6 +6,11 @@ was changed, why, and what was left alone, so the context isn't lost.
 
 Build instructions are in the [README](../README.md).
 
+> **Later change (2026-09-27):** the simulation code this document describes (`include/swarming_spp/`,
+> `Particle`, `ParticleController`) has since been replaced by a new simulation core in `src/sim/`. See
+> [SIMULATION_DESIGN.md](SIMULATION_DESIGN.md). The macOS, Cinder, Retina and batched-drawing notes below
+> still apply.
+
 ## Cinder version and setup
 
 - **Cinder 0.9.3** (released Nov 2025) is the latest tagged release and is what the project targets.

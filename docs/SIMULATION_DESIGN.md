@@ -1,6 +1,7 @@
 # Simulation redesign: showing collective predator response honestly
 
-Status: **proposal, not yet implemented** (2026-09-26). It builds on
+Status: **implemented** (designed 2026-09-26, built and calibrated 2026-09-27). Section 10 records what
+was built, how it was calibrated, the results, and where the implementation departs from this design. It builds on
 [CRITICALITY_AND_DYNAMICS.md](CRITICALITY_AND_DYNAMICS.md), which explains why the current simulation
 can't show the intended behavior. The literature behind it is summarized here. More detailed
 AI-generated reading notes are kept locally in `docs/research/`; they are deliberately not committed
@@ -99,11 +100,13 @@ Speed dynamics have never been measured in real flocks, so this part is **[ours]
 choice consistent with the energy: overdamped Langevin dynamics on the speed.
 
 ```
-γ_s ds_i/dt = −∂H/∂s_i + 2T/s_i + f_i^coh·u_i + ξ_i^s        ⟨ξ^s ξ^s⟩ = 2 γ_s T
+γ_s ds_i/dt = −∂H/∂s_i + 2T/(N s̄) + f_i^coh·u_i + ξ_i^s      ⟨ξ^s ξ^s⟩ = 2 γ_s T
 ```
 
-The 2T/s_i term is the 3D volume factor (the "entropic push" described in Cavagna 2022). It makes the
-speed distribution match that of the full-vector models in the literature. Speed control is switchable:
+The 2T/(N s̄) term is the 3D volume factor (the "entropic push" described in Cavagna 2022). In the
+full-velocity models it acts once, on the flock's mean velocity: each bird's own factor cancels against
+its sideways velocity fluctuations. (The first implementation applied it per bird, which blew up the
+group speed under weak speed control; see section 10.) Speed control is switchable:
 
 | Speed preset | Setting | Behavior |
 |---|---|---|
@@ -258,3 +261,156 @@ Primary papers (per-paper details and verification status are in the local, unco
 - Papadopoulou et al., Communications Biology (2026) (StarEscape)
 - Rosenthal et al., PNAS 112, 4690 (2015); Poel et al., Science Advances 8, eabm6385 (2022)
 - Klamser & Romanczuk, PLoS Comput. Biol. 17, e1008832 (2021)
+
+## 10. Implementation and calibration record (2026-09-27)
+
+### 10.1 What was built
+
+- `src/sim/`: a new simulation core with no Cinder dependency.
+  - `Flock`: state, topological neighbors, forces, and the BAOAB and overdamped integrators.
+  - `Params`: parameters and the presets.
+  - `Predator`: attack runs, detection with reaction delay, fields, false alarms, per-attack report.
+  - `Measure`: statistics, correlation functions, turn-front tracker, fluctuation probe.
+- `src/FlockingApp.cpp`: the app, rewritten on the new core. It has the presets, predator controls,
+  color modes (including "turned since attack"), slow motion, and the live validation panel.
+- `tools/flocksim_cli.cpp`: a headless driver with `stats`, `turn`, `speedpush`, `attack` and `probe`
+  commands. All numbers below come from it.
+- The legacy simulation code (`include/swarming_spp/`, `Particle`, `ParticleController`) was removed
+  after the parity check (10.2).
+
+### 10.2 Verification
+
+- **Equilibrium test (section 3.7):** with a fixed neighbor network and no cohesion, the overdamped
+  preset and the inertial preset at η = 0.5 and η = 20 all give polarization 0.9923–0.9927 at the same
+  J and T. The friction differs by 280× across these runs. So the presets differ only in dynamics, as
+  designed, and the integrators are correct.
+- **Parity with the legacy code:** with the legacy parameters mapped into the new core (overdamped),
+  the results match the old app.
+
+  | | Legacy app | New core |
+  |---|---|---|
+  | Neighbors | ~7.0 | 7.03 |
+  | Q_int | 0.012–0.014 | 0.0130 |
+  | Mean speed | 12.2–12.5 m/s | 12.34 m/s |
+  | Polarization | 0.989 | 0.995 |
+
+  The small polarization gap is attributed to the legacy code's coarse time step (dt = 0.03) and to
+  readings taken before it had fully settled.
+
+### 10.3 Calibration and departures from the design
+
+Final values are in `src/sim/Params.cpp`, with a comment on each. The points that needed real decisions:
+
+1. **Inertial steering plus cohesion is unstable at low friction.** A bird steers toward its neighbors,
+   moves, and overshoots. With inertia and little friction this relative motion grows: the dynamics are
+   third order, and the Routh–Hurwitz condition needs roughly η·J·n_c > χ·K·v0, where K is the cohesion
+   stiffness. At η = 0.5 the flock heated up to polarization 0.63 and fell apart.
+   - Neither ingredient does this alone: moving birds without cohesion stay at 0.9915, and cohesion
+     without movement stays at 0.9914.
+   - Fix: η ≥ 1 for preset B (we use 2), and a moderate cohesion core.
+2. **J was raised from 100 to 200** so that preset B's turn fronts land in the measured range (a
+   brief pulse gives about 14 m/s, a sustained push about 22 m/s; data: 20–40 m/s). J/T = 10 gives
+   polarization about 0.975.
+3. **Cohesion** keeps the shape of eq. G5 but uses rEq = 1.3 m, rAttract = 1.9 m, far attraction 0.15
+   (1 in G5) and core strength 10. G5's strong far attraction compressed the flock to r1 ≈ 0.3 m; real
+   r1 is 0.68–1.51 m.
+   - A fore-aft cohesion gain of 30 in the speed equation **[ours]** keeps the flock together under
+     weak speed control. Birds can hold their place along the flight direction only by changing speed.
+   - Cohesion strength is calibrated **per preset** (A 320, B 40, C 110) so every flock has similar size
+     and spacing at rest. That's a documented difference beyond the turning dynamics.
+4. **Preset A's friction (η = 37 = √(J·n_c·χ))** matches B's local response time, making inertia the
+   only intended difference. A tension appears here:
+   - An overdamped flock tuned to the *measured* spontaneous relaxation (η ≈ 840) cannot stay cohesive
+     at all, even with 12× cohesion.
+   - A much faster-steering one (η = 15) does carry turns across the flock, but only with relaxation
+     10–20× faster than measured.
+5. **The speed volume factor is collective** (section 3.4). The per-bird version pushed the group speed
+   to 33 m/s under near-critical control.
+6. **The predator strikes at the edge and breaks away.** It breaks away after closing to 1.5 m, or 0.6 s
+   after the first detection. The first version plowed through the flock, so up to 40% of birds sensed
+   it directly, which hid the social propagation the demo is about.
+7. **Preset C:** at J = 200 we use η = 60, J4 = 30000. We found no parameters that give realistic
+   spontaneous relaxation, realistic polarization *and* propagating turns at once:
+   - lowering J to slow the relaxation stopped turns from spreading (1–18% turned);
+   - the quartic term pushes polarization up to about 0.997.
+
+### 10.4 Results (N = 300 unless noted; headless runs)
+
+**Snapshot statistics** at rest, speed control S3 (marginal):
+
+| Preset | Polarization | Speed (m/s) | Speed SD/mean | Neighbors | r1 (m) | L (m) | Q_int | ξ_dir/L | ξ_sp/L | Pieces |
+|---|---|---|---|---|---|---|---|---|---|---|
+| A overdamped | 0.978 | 11.0 | 0.16 | 7.0 | 0.83 | 21 | 0.051 | 0.25 | 0.20 | 1 |
+| B inertial | 0.975 | 12.2 | 0.14 | 7.0 | 0.98 | 28 | 0.049 | 0.23 | 0.21 | 1 |
+| C nonlinear | 0.997 | 12.4 | 0.14 | 6.8 | 0.94 | 20 | 0.019 | 0.31 | 0.25 | 1 |
+
+All rows pass every static check except C's polarization, which is above the 0.995 upper end.
+Stiff (S1) and near-critical (S2) speed control are similar, except for speed spread: S1 is about 0.09,
+S2 about 0.14–0.17.
+
+**Turn started by 3 edge birds** (heading push 1 × J·n_c; S3):
+
+| Preset | Brief 0.3 s push: share turned in 3 s | Front speed | Sustained push: share turned | Front speed |
+|---|---|---|---|---|
+| A overdamped | 54% | not measurable (partial) | 61% | not measurable |
+| B inertial | 100% | ~14 m/s | 100% | ~22 m/s |
+| C nonlinear | 1% | — | 30–39% | ~3 m/s |
+
+**Predator attacks**, 6 random attacks per preset (S3):
+
+| Preset | Birds sensing the predator directly | Share turned > 30° within 2 s | Front speed | Most pieces |
+|---|---|---|---|---|
+| A overdamped | 3–39% | 69–100% (100% only when ≥ 20% sensed it directly) | 6–17 m/s | 2 |
+| B inertial | 4–19% | 100% in every attack | 27–46 m/s | 1 |
+| C nonlinear | 6–20% | 2–100% (all-or-nothing) | 12–28 m/s when it spreads | 1 |
+
+**Speed push:** 3 edge birds pushed to speed up for 4 s (preset B):
+
+| Speed control | Change near the pushed birds | Whole-flock mean change |
+|---|---|---|
+| S1 stiff | +0.2 m/s | −0.04 m/s (stays local) |
+| S2 near-critical | +2.4 m/s, +0.6 m/s at 9 m | +0.98 m/s (flock-wide) |
+| S3 marginal | +2.6 m/s, +0.5–0.85 m/s out to 12 m | +0.69 m/s (flock-wide) |
+
+**Flock-size sweep** (preset B):
+
+| Speed control | N = 100 | N = 300 | N = 1000 |
+|---|---|---|---|
+| S3 marginal | ξ_sp = 2.7 m, L = 17 m | 5.7 m, L = 28 m | 11.2 m, L = 53 m |
+| S1 stiff | 1.6 m, L = 10 m | 2.1 m, L = 14 m | 2.8 m, L = 20 m |
+
+S3's ξ_sp/L stays at 0.16–0.21. But S1's ratio is similar (0.14–0.16), because the stiff flocks stay
+compact. This is the review's warning in action: at these sizes the zero crossing can't tell the two
+apart (it's forced by a sum rule). The speed-push response test above is what separates them.
+
+**Spontaneous fluctuations** at k = 1.5 m⁻¹ (target: overdamped, half-life ~0.2–0.4 s):
+
+| Preset | Character | Half-life |
+|---|---|---|
+| A overdamped | overdamped | 0.04 s |
+| B inertial | **oscillatory** (autocorrelation dips to −0.42) | 0.04 s |
+| C nonlinear | overdamped | ≤ 0.02 s |
+
+All three presets fail the half-life target.
+
+### 10.5 What the simulation shows, and what it doesn't
+
+- **Shown, within the model:**
+  - With inertial turning, a threat sensed directly by a few birds turns the *whole* flock, fast
+    (27–46 m/s, about the measured 20–40 m/s), and the flock stays in one piece.
+  - With overdamped turning at the same statics and local response time, the same threat turns fewer
+    birds, more slowly, and the flock sometimes splits. A brief stimulus mostly stays local.
+  - With near-critical or marginal speed control (the paper's criticality), an escape speed-up spreads
+    across the flock; with stiff control it stays with the birds that sensed the threat.
+- **Not shown (and not claimed):**
+  - That near-critical flocks evade real predators better. That is untested in the literature. The
+    predator panel labels its outcomes as model predictions.
+  - That any preset is "the" correct model. Each fails at least one published measurement, as listed
+    above and shown live in the validation panel. The literature's tension (overdamped spontaneous
+    fluctuations versus undamped turn propagation) is reproduced here, not resolved.
+- **Known limitations:**
+  - Model flocks are round; real ones are flat.
+  - Speed dynamics are our assumption; they have never been measured.
+  - Cohesion is non-equilibrium and calibrated per preset.
+  - Turn-front speeds are noisy.
+  - There is no copying of discrete escape maneuvers, so no agitation waves.
